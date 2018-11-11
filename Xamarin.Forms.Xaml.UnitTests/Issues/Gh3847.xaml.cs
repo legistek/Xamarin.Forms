@@ -7,14 +7,14 @@ using Xamarin.Forms.Core.UnitTests;
 
 namespace Xamarin.Forms.Xaml.UnitTests
 {	
-	public partial class Gh3487 : ContentPage
+	public partial class Gh3847 : ContentPage
 	{
-		public Gh3487()
+		public Gh3847()
 		{
 			InitializeComponent();
 		}
 
-		public Gh3487(bool useCompiledXaml)
+		public Gh3847(bool useCompiledXaml)
 		{
 			//this stub will be replaced at compile time
 		}
@@ -37,7 +37,7 @@ namespace Xamarin.Forms.Xaml.UnitTests
 			[TestCase(false), TestCase(true)]
 			public void RelativeSourceSelfBinding(bool useCompiledXaml)
 			{
-				var view = new Gh3487(useCompiledXaml);
+				var view = new Gh3847(useCompiledXaml);
 				var label = view.FindByName<Label>("SelfBindingLabel");
 				Assert.AreEqual(label.Text, label.StyleId);
 			}
@@ -45,7 +45,7 @@ namespace Xamarin.Forms.Xaml.UnitTests
 			[TestCase(false), TestCase(true)]
 			public void RelativeSourceAncestorLevelBinding(bool useCompiledXaml)
 			{
-				var view = new Gh3487(useCompiledXaml);
+				var view = new Gh3847(useCompiledXaml);
 				var stack0 = view.FindByName<StackLayout>("Stack0");
 				var stack1 = view.FindByName<StackLayout>("Stack1");
 				var level1Label = view.FindByName<Label>("AncestorLevel1Label");
@@ -60,7 +60,7 @@ namespace Xamarin.Forms.Xaml.UnitTests
 			[TestCase(false), TestCase(true)]
 			public void RelativeSourceTemplatedParentBinding(bool useCompiledXaml)
 			{
-				var view = new Gh3487(useCompiledXaml);
+				var view = new Gh3847(useCompiledXaml);
 				var cv = view.FindByName<ContentView>("contentView");
 				var label = cv.Children[0] as Label;
 				Assert.AreEqual(label.Text, cv.StyleId);
