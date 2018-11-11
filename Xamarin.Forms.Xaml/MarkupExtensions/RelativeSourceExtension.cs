@@ -4,12 +4,12 @@ namespace Xamarin.Forms.Xaml
 {
 	[ContentProperty("Mode")]
 	[AcceptEmptyServiceProvider]
-	public sealed class RelativeSourceExtension : IMarkupExtension<RelativeSourceBinding>
+	public sealed class RelativeSourceExtension : IMarkupExtension<RelativeBindingSource>
 	{
 		Type _ancestorType;
 		int _ancestorLevel = 1;
 
-		public RelativeSourceBindingMode Mode
+		public RelativeBindingSourceMode Mode
 		{
 			get;
 			set;
@@ -22,7 +22,7 @@ namespace Xamarin.Forms.Xaml
 			{
 				_ancestorLevel = value;
 				if (_ancestorLevel > 0)
-					this.Mode = RelativeSourceBindingMode.FindAncestor;
+					this.Mode = RelativeBindingSourceMode.FindAncestor;
 			}
 		}
 
@@ -33,24 +33,24 @@ namespace Xamarin.Forms.Xaml
 			{
 				_ancestorType = value;
 				if (_ancestorType != null)
-					this.Mode = RelativeSourceBindingMode.FindAncestor;
+					this.Mode = RelativeBindingSourceMode.FindAncestor;
 			}
 		}
 
-		RelativeSourceBinding IMarkupExtension<RelativeSourceBinding>.ProvideValue(IServiceProvider serviceProvider)
+		RelativeBindingSource IMarkupExtension<RelativeBindingSource>.ProvideValue(IServiceProvider serviceProvider)
 		{
 			switch (this.Mode)
 			{
-				case RelativeSourceBindingMode.Self:
-					return RelativeSourceBinding.Self;
-				case RelativeSourceBindingMode.TemplatedParent:
-					return RelativeSourceBinding.TemplatedParent;
-				case RelativeSourceBindingMode.FindAncestor:
+				case RelativeBindingSourceMode.Self:
+					return RelativeBindingSource.Self;
+				case RelativeBindingSourceMode.TemplatedParent:
+					return RelativeBindingSource.TemplatedParent;
+				case RelativeBindingSourceMode.FindAncestor:
 					if (AncestorType == null)
 						throw new Exception(
-							$"{nameof(RelativeSourceBindingMode.FindAncestor)} {nameof(Binding.RelativeSource)} " +
+							$"{nameof(RelativeBindingSourceMode.FindAncestor)} {nameof(Binding.RelativeSource)} " +
 							$"binding must specify valid {nameof(AncestorType)}");
-					return new RelativeSourceBinding(RelativeSourceBindingMode.FindAncestor)
+					return new RelativeBindingSource(RelativeBindingSourceMode.FindAncestor)
 					{
 						AncestorType = AncestorType,
 						AncestorLevel = AncestorLevel
@@ -62,7 +62,7 @@ namespace Xamarin.Forms.Xaml
 
 		public object ProvideValue(IServiceProvider serviceProvider)
 		{
-			return (this as IMarkupExtension<RelativeSourceBinding>).ProvideValue(serviceProvider);
+			return (this as IMarkupExtension<RelativeBindingSource>).ProvideValue(serviceProvider);
 		}
 	}
 }

@@ -21,6 +21,7 @@ namespace Xamarin.Forms
 		string _path;
 		object _source;
 		string _updateSourceEventName;
+		RelativeBindingSource _relativeSource;
 
 		public Binding()
 		{
@@ -85,10 +86,14 @@ namespace Xamarin.Forms
 			}
 		}
 
-		public virtual RelativeSourceBinding RelativeSource
+		public RelativeBindingSource RelativeSource
 		{
-			get;
-			set;
+			get { return _relativeSource; }
+			set
+			{
+				ThrowIfApplied();
+				_relativeSource = value;
+			}
 		}
 
 		[EditorBrowsable(EditorBrowsableState.Never)]
@@ -143,16 +148,16 @@ namespace Xamarin.Forms
 		{
 			switch (this.RelativeSource.Mode)
 			{
-				case RelativeSourceBindingMode.Self:
+				case RelativeBindingSourceMode.Self:
 					return bindObj;
-				case RelativeSourceBindingMode.TemplatedParent:
+				case RelativeBindingSourceMode.TemplatedParent:
 					{
 						var view = bindObj as Element;
 						if (view == null)
 							throw new InvalidOperationException();
 						return await TemplateUtilities.FindTemplatedParentAsync(view);							
 					}
-				case RelativeSourceBindingMode.FindAncestor:
+				case RelativeBindingSourceMode.FindAncestor:
 					{
 						if (!(bindObj is Element elem))
 							throw new InvalidOperationException();
@@ -160,7 +165,7 @@ namespace Xamarin.Forms
 						int currentLevel = 1;
 						while (parent != null &&
 							   (currentLevel < this.RelativeSource.AncestorLevel ||
-							    parent.GetType() != this.RelativeSource.AncestorType))
+							    !this.RelativeSource.AncestorType.IsInstanceOfType(parent)))
 						{
 							parent = await TemplateUtilities.GetRealParentAsync(parent);
 							currentLevel++;

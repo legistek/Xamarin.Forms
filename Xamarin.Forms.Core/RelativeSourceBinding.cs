@@ -4,23 +4,23 @@ using System.Text;
 
 namespace Xamarin.Forms
 {
-	public class RelativeSourceBinding
+	public class RelativeBindingSource
 	{
-		static RelativeSourceBinding _self;
-		static RelativeSourceBinding _templatedParent;
+		static RelativeBindingSource _self;
+		static RelativeBindingSource _templatedParent;
 		Type _ancestorType = null;
 		int _ancestorLevel = 1;
 
-		public RelativeSourceBinding()
+		public RelativeBindingSource()
 		{
 		}
 
-		public RelativeSourceBinding(RelativeSourceBindingMode mode)
+		public RelativeBindingSource(RelativeBindingSourceMode mode)
 		{
 			this.Mode = mode;
 		}
 
-		public RelativeSourceBindingMode Mode
+		public RelativeBindingSourceMode Mode
 		{
 			get;
 			set;
@@ -33,7 +33,7 @@ namespace Xamarin.Forms
 			{
 				_ancestorType = value;
 				if (_ancestorType != null)
-					this.Mode = RelativeSourceBindingMode.FindAncestor;
+					this.Mode = RelativeBindingSourceMode.FindAncestor;
 			}
 		}
 
@@ -44,23 +44,23 @@ namespace Xamarin.Forms
 			{
 				_ancestorLevel = value;
 				if (_ancestorLevel > 0)
-					this.Mode = RelativeSourceBindingMode.FindAncestor;
+					this.Mode = RelativeBindingSourceMode.FindAncestor;
 			}
 		}
 
-		public static RelativeSourceBinding Self
+		public static RelativeBindingSource Self
 		{
 			get
 			{
-				return _self ?? (_self = new RelativeSourceBinding(RelativeSourceBindingMode.Self));
+				return _self ?? (_self = new RelativeBindingSource(RelativeBindingSourceMode.Self));
 			}
 		}
 
-		public static RelativeSourceBinding TemplatedParent
+		public static RelativeBindingSource TemplatedParent
 		{
 			get
 			{
-				return _templatedParent ?? (_templatedParent = new RelativeSourceBinding(RelativeSourceBindingMode.TemplatedParent));
+				return _templatedParent ?? (_templatedParent = new RelativeBindingSource(RelativeBindingSourceMode.TemplatedParent));
 			}
 		}
 	}

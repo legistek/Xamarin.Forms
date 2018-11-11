@@ -24,17 +24,15 @@ namespace Xamarin.Forms.Xaml
 
 		BindingBase IMarkupExtension<BindingBase>.ProvideValue(IServiceProvider serviceProvider)
 		{
-			//return new TemplateBinding(Path, Mode, Converter, ConverterParameter, StringFormat);
 			return new Binding
 			{
-				RelativeSource = RelativeSourceBinding.TemplatedParent,
+				RelativeSource = RelativeBindingSource.TemplatedParent,
 				Path = Path,
 				Mode = Mode,
 				Converter = Converter,
 				ConverterParameter = ConverterParameter,
 				StringFormat = StringFormat
-			};
-			
+			};		
 		}
 
 		object IMarkupExtension.ProvideValue(IServiceProvider serviceProvider)
