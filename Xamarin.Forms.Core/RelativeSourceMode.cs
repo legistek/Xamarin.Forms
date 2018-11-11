@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Xamarin.Forms
+﻿namespace Xamarin.Forms
 {
-	public enum RelativeSourceBindingMode
+	public enum RelativeBindingSourceMode
 	{
+		// TODO? (much tricker than the other three)
+		// PreviousData = 0,
 		TemplatedParent = 1,
 		Self = 2,
 		FindAncestor = 3
