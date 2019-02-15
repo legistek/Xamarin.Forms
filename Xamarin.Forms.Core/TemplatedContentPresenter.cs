@@ -5,6 +5,7 @@ using System.Text;
 
 namespace Xamarin.Forms
 {
+	[ContentProperty(nameof(Content))]
 	public class TemplatedContentPresenter : Layout
 	{
 		public TemplatedContentPresenter() : base()
