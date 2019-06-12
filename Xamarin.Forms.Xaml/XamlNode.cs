@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -16,6 +17,14 @@ namespace Xamarin.Forms.Xaml
 		INode Clone();
 	}
 
+	interface IXamlTypeParser
+	{
+		T GetManagedType<T>(XmlType xmlType, IXmlLineInfo lineInfo, out XamlParseException exception)
+			where T : class;
+		bool DerivesFrom(XmlType xmlType, Type t);
+		bool HasAttribute(XmlType xmlType, Type attrType);
+	}
+
 	interface IValueNode : INode
 	{
 	}
@@ -27,6 +36,8 @@ namespace Xamarin.Forms.Xaml
 		INameScope Namescope { get; }
 		XmlType XmlType { get; }
 		string NamespaceURI { get; }
+		bool IsSpecialType(Type t);
+		T GetManagedType<T>(out XamlParseException xpe) where T : class;
 	}
 
 	interface IListNode : INode
@@ -115,7 +126,9 @@ namespace Xamarin.Forms.Xaml
 	[DebuggerDisplay("{XmlType.Name}")]
 	class ElementNode : BaseNode, IValueNode, IElementNode
 	{
-		public ElementNode(XmlType type, string namespaceURI, IXmlNamespaceResolver namespaceResolver, int linenumber = -1,
+		public ElementNode(XmlType type, string namespaceURI, IXmlNamespaceResolver namespaceResolver, 
+			IXamlTypeParser typeParser,
+			int linenumber = -1,
 			int lineposition = -1)
 			: base(namespaceResolver, linenumber, lineposition)
 		{
@@ -124,6 +137,7 @@ namespace Xamarin.Forms.Xaml
 			CollectionItems = new List<INode>();
 			XmlType = type;
 			NamespaceURI = namespaceURI;
+			TypeParser = typeParser;
 		}
 
 		public Dictionary<XmlName, INode> Properties { get; }
@@ -132,6 +146,19 @@ namespace Xamarin.Forms.Xaml
 		public XmlType XmlType { get; }
 		public string NamespaceURI { get; }
 		public INameScope Namescope { get; set; }
+
+		internal IXamlTypeParser TypeParser { get; }
+
+		public bool IsSpecialType(Type t)
+		{
+			return this.TypeParser?.DerivesFrom(this.XmlType, t) == true;
+		}
+
+		public T GetManagedType<T>(out XamlParseException xpe) where T : class
+		{
+			xpe = null;
+			return this.TypeParser?.GetManagedType<T>(this.XmlType, this, out xpe);
+		}
 
 		public override void Accept(IXamlNodeVisitor visitor, INode parentNode)
 		{
@@ -171,7 +198,7 @@ namespace Xamarin.Forms.Xaml
 
 		public override INode Clone()
 		{
-			var clone = new ElementNode(XmlType, NamespaceURI, NamespaceResolver, LineNumber, LinePosition) {
+			var clone = new ElementNode(XmlType, NamespaceURI, NamespaceResolver, TypeParser, LineNumber, LinePosition) {
 				IgnorablePrefixes = IgnorablePrefixes
 			};
 			foreach (var kvp in Properties)
@@ -186,7 +213,8 @@ namespace Xamarin.Forms.Xaml
 
 	abstract class RootNode : ElementNode
 	{
-		protected RootNode(XmlType xmlType, IXmlNamespaceResolver nsResolver) : base(xmlType, xmlType.NamespaceUri, nsResolver)
+		protected RootNode(XmlType xmlType, IXmlNamespaceResolver nsResolver, IXamlTypeParser typeParser) 
+			: base(xmlType, xmlType.NamespaceUri, nsResolver, typeParser)
 		{
 		}
 

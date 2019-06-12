@@ -25,7 +25,7 @@ namespace Xamarin.Forms.Build.Tasks
 			if (!(typeNameNode is ValueNode valueNode))
 				throw new XamlParseException("TypeName isn't set.", node as XmlLineInfo);
 
-			var contentTypeRef = module.ImportReference(XmlTypeExtensions.GetTypeReference(valueNode.Value as string, module, node as BaseNode))
+			var contentTypeRef = module.ImportReference(XmlTypeExtensions.GetTypeReference(valueNode.Value as string, node as BaseNode, context))
 				?? throw new XamlParseException($"Can't resolve type `{valueNode.Value}'.", node as IXmlLineInfo);
 
 			var dataTemplateCtor = module.ImportCtorReference(typeRef, new[] { module.ImportReference(("mscorlib", "System", "Type")) });

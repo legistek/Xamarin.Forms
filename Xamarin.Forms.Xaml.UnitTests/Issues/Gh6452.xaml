@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<xf:ContentPage xmlns:xf="clr-namespace:Xamarin.Forms;assembly=Xamarin.Forms.Core" 
+                xmlns:xfx="clr-namespace:Xamarin.Forms.Xaml;assembly=Xamarin.Forms.Xaml"
+                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                xmlns:local="clr-namespace:Xamarin.Forms.Xaml.UnitTests"
+                x:Class="Xamarin.Forms.Xaml.UnitTests.Gh6452">
+    <xf:ContentPage.BindingContext>
+        <local:Gh6452Model />
+    </xf:ContentPage.BindingContext>
+    <xf:ContentPage.Resources>
+        <xf:DataTemplate x:Key="TestTemplate">
+            <xf:Label Text="{xfx:Binding}"/>
+        </xf:DataTemplate>
+        <xf:Style TargetType="xf:Label">
+            <xf:Setter Property="BackgroundColor" 
+                       Value="#FF00FF00"/>
+            <xf:Style.Triggers>
+                <xf:DataTrigger TargetType="xf:Label">
+                    <xf:Setter Property="FontFamily" Value="Times New Roman"/>
+                </xf:DataTrigger>
+            </xf:Style.Triggers>
+        </xf:Style>
+        <xf:Color x:Key="RedColor">#FFFF0000</xf:Color>
+    </xf:ContentPage.Resources>
+    <xf:ContentPage.Content>
+        <xf:StackLayout>
+            <xf:Label Text="Hello Xamarin.Forms!" 
+                   x:Name="redLabel"
+                   TextColor="{xfx:StaticResource RedColor}"/>
+            <xf:ContentView x:Name="control">
+                <xf:ContentView.ControlTemplate>
+                    <xf:ControlTemplate>
+                        <xf:Label Text="Control Label"/>
+                    </xf:ControlTemplate>
+                </xf:ContentView.ControlTemplate>
+            </xf:ContentView>
+        </xf:StackLayout>
+    </xf:ContentPage.Content>
+</xf:ContentPage>

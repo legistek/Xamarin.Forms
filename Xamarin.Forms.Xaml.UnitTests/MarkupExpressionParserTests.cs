@@ -31,6 +31,16 @@ namespace Xamarin.Forms.Xaml.UnitTests
 				}
 			}
 
+			public bool IsSpecialType(Type t)
+			{
+				throw new NotImplementedException();
+			}
+
+			public T GetManagedType<T>(out XamlParseException xpe) where T : class
+			{
+				throw new NotImplementedException();
+			}
+
 			public object Value {get;set;}
 			public Dictionary<XmlName, INode> Properties { get; set; }
 
@@ -83,7 +93,7 @@ namespace Xamarin.Forms.Xaml.UnitTests
 			var nsManager = new XmlNamespaceManager (new NameTable ());
 			nsManager.AddNamespace ("local", "clr-namespace:Xamarin.Forms.Xaml.UnitTests;assembly=Xamarin.Forms.Xaml.UnitTests");
 			nsManager.AddNamespace ("x", "http://schemas.microsoft.com/winfx/2009/xaml");
-			typeResolver = new Internals.XamlTypeResolver (nsManager, XamlParser.GetElementType, Assembly.GetCallingAssembly ());
+			typeResolver = new Internals.XamlTypeResolver (nsManager, Assembly.GetCallingAssembly ());
 		}
 
 		[Test]

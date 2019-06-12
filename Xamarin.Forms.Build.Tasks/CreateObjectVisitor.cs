@@ -49,7 +49,9 @@ namespace Xamarin.Forms.Build.Tasks
 
 		public void Visit(ElementNode node, INode parentNode)
 		{
-			var typeref = Module.ImportReference(node.XmlType.GetTypeReference(Module, node));
+			var typeref = Module.ImportReference(node.GetManagedType<TypeReference>(out XamlParseException xpe));
+			if (xpe != null)
+				throw xpe;
 			TypeDefinition typedef = typeref.ResolveCached();
 
 			if (IsXaml2009LanguagePrimitive(node)) {

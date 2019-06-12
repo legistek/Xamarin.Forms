@@ -47,9 +47,14 @@ namespace Xamarin.Forms.Xaml
 		}
 
 		static bool IsStyle(INode node, INode parentNode)
-			=> (parentNode as ElementNode)?.XmlType.Name == "Style";
+		{
+			return (parentNode as ElementNode)?.IsSpecialType(typeof(Style)) == true;
+		}
 
 		static bool IsVisualStateGroupList(ElementNode node)
-			=> node?.XmlType.Name == "VisualStateGroup" && node?.Parent is IListNode;
+		{			
+			return node?.IsSpecialType(typeof(VisualStateGroup)) == true &&
+				node?.Parent is IListNode;
+		}
 	}
 }

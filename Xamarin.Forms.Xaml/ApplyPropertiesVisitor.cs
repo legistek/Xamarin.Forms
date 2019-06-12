@@ -268,9 +268,8 @@ namespace Xamarin.Forms.Xaml
 			if (dotIdx > 0) {
 				var typename = localname.Substring(0, dotIdx);
 				localname = localname.Substring(dotIdx + 1);
-				XamlParseException xpe;
-				elementType = XamlParser.GetElementType(new XmlType(namespaceURI, typename, null), lineInfo,
-					context.RootElement.GetType().GetTypeInfo().Assembly, out xpe);
+				elementType = context.TypeParser.GetManagedType<Type>(
+					new XmlType(namespaceURI, typename, null), lineInfo, out XamlParseException xpe);
 
 				if (xpe != null)
 					throw xpe;
@@ -695,7 +694,7 @@ namespace Xamarin.Forms.Xaml
 			((IDataTemplate)dt).LoadTemplate = () => {
 #pragma warning restore 0612
 				var cnode = node.Clone();
-				var context = new HydrationContext { ParentContext = Context, RootElement = Context.RootElement };
+				var context = new HydrationContext (Context.TypeParser) { ParentContext = Context, RootElement = Context.RootElement };
 				cnode.Accept(new XamlNodeVisitor((n, parent) => n.Parent = parent), node.Parent); //set parents for {StaticResource}
 				cnode.Accept(new ExpandMarkupsVisitor(context), null);
 				cnode.Accept(new NamescopingVisitor(context), null);

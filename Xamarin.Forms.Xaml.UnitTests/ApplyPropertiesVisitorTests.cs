@@ -25,16 +25,17 @@ namespace Xamarin.Forms.Xaml.UnitTests
 		{
 			const string NAMESPACE = "clr-namespace:Xamarin.Forms.Xaml.UnitTests;assembly=Xamarin.Forms.Xaml.UnitTests";
 			var resolver = new MockNameSpaceResolver();
+			var parser = new RuntimeXamlTypeParser();
 			var type = new XmlType(NAMESPACE, "ApplyPropertiesVisitorTests+MarkupExtension", null);
 			var listNode = new ListNode(new[]
 			{
-				new ElementNode(type, NAMESPACE, resolver),
-				new ElementNode(type, NAMESPACE, resolver)
+				new ElementNode(type, NAMESPACE, resolver, parser),
+				new ElementNode(type, NAMESPACE, resolver, parser)
 			}, resolver);
 			var rootElement = new ArrayListOwner();
 			var rootType = new XmlType(NAMESPACE, "ApplyPropertiesVisitorTests+ArrayListOwner", null);
-			var rootNode = new XamlLoader.RuntimeRootNode(rootType, rootElement, null);
-			var context = new HydrationContext { RootElement = rootElement };
+			var rootNode = new XamlLoader.RuntimeRootNode(rootType, rootElement, null, parser);
+			var context = new HydrationContext(parser) { RootElement = rootElement };
 
 			rootNode.Properties.Add(new XmlName(null, "ArrayList"), listNode);
 			rootNode.Accept(new XamlNodeVisitor((node, parent) => node.Parent = parent), null);

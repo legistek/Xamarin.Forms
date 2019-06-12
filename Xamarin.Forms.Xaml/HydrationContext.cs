@@ -5,10 +5,11 @@ namespace Xamarin.Forms.Xaml
 {
 	class HydrationContext
 	{
-		public HydrationContext()
+		public HydrationContext(IXamlTypeParser parser)
 		{
 			Values = new Dictionary<INode, object>();
 			Types = new Dictionary<IElementNode, Type>();
+			TypeParser = parser;
 		}
 
 		public Dictionary<INode, object> Values { get; }
@@ -16,5 +17,6 @@ namespace Xamarin.Forms.Xaml
 		public HydrationContext ParentContext { get; set; }
 		public Action<Exception> ExceptionHandler { get; set; }
 		public object RootElement { get; set; }
+		public IXamlTypeParser TypeParser { get; }
 	}
 }

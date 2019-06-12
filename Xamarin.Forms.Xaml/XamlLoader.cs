@@ -87,13 +87,15 @@ namespace Xamarin.Forms.Xaml
 						continue;
 					}
 
-					var rootnode = new RuntimeRootNode(new XmlType(reader.NamespaceURI, reader.Name, null), view, (IXmlNamespaceResolver)reader);
+					var typeParser = new RuntimeXamlTypeParser(view.GetType().GetTypeInfo().Assembly);
+
+					var rootnode = new RuntimeRootNode(new XmlType(reader.NamespaceURI, reader.Name, null), view, (IXmlNamespaceResolver)reader, typeParser);
 					XamlParser.ParseXaml(rootnode, reader);
 #pragma warning disable 0618
 					var doNotThrow = ResourceLoader.ExceptionHandler2 != null || Internals.XamlLoader.DoNotThrowOnExceptions;
 #pragma warning restore 0618
 					void ehandler(Exception e) => ResourceLoader.ExceptionHandler2?.Invoke((e, XamlFilePathAttribute.GetFilePathForObject(view)));
-					Visit(rootnode, new HydrationContext {
+					Visit(rootnode, new HydrationContext(typeParser) {
 						RootElement = view,
 
 						ExceptionHandler = doNotThrow ? ehandler : (Action<Exception>)null
@@ -125,9 +127,14 @@ namespace Xamarin.Forms.Xaml
 					}
 
 					var typeArguments = XamlParser.GetTypeArguments(reader);
-					var rootnode = new RuntimeRootNode(new XmlType(reader.NamespaceURI, reader.Name, typeArguments), null, (IXmlNamespaceResolver)reader);
+					var typeParser = new RuntimeXamlTypeParser();
+					var rootnode = new RuntimeRootNode(
+						new XmlType(reader.NamespaceURI, reader.Name, typeArguments), 
+						null, 
+						(IXmlNamespaceResolver)reader, 
+						typeParser);
 					XamlParser.ParseXaml(rootnode, reader);
-					var visitorContext = new HydrationContext {
+					var visitorContext = new HydrationContext(typeParser) {
 						ExceptionHandler = doNotThrow ? ehandler : (Action<Exception>)null,
 					};
 					var cvv = new CreateValuesVisitor(visitorContext);
@@ -159,24 +166,38 @@ namespace Xamarin.Forms.Xaml
 						continue;
 					}
 
+					var typeParser = new RuntimeXamlTypeParser(rootView.GetType().GetTypeInfo().Assembly);
+
 					//the root is set to null, and not to rootView, on purpose as we don't want to erase the current Resources of the view
-					RootNode rootNode = new RuntimeRootNode(new XmlType(reader.NamespaceURI, reader.Name, null), null, (IXmlNamespaceResolver)reader);
+					RootNode rootNode = new RuntimeRootNode(
+						new XmlType(reader.NamespaceURI, reader.Name, null), 
+						null, 
+						(IXmlNamespaceResolver)reader,
+						typeParser);
 					XamlParser.ParseXaml(rootNode, reader);
 					var rNode = (IElementNode)rootNode;
 					if (!rNode.Properties.TryGetValue(new XmlName(XamlParser.XFUri, "Resources"), out var resources))
 						return null;
 
-					var visitorContext = new HydrationContext
+					var visitorContext = new HydrationContext(typeParser)
 					{
 						ExceptionHandler = ResourceLoader.ExceptionHandler2 != null ? ehandler : (Action<Exception>)null,
 					};
 					var cvv = new CreateValuesVisitor(visitorContext);
 					if (resources is ElementNode resourcesEN && (resourcesEN.XmlType.NamespaceUri != XamlParser.XFUri || resourcesEN.XmlType.Name != nameof(ResourceDictionary))) { //single implicit resource
-						resources = new ElementNode(new XmlType(XamlParser.XFUri, nameof(ResourceDictionary), null), XamlParser.XFUri, rootNode.NamespaceResolver);
+						resources = new ElementNode(
+							new XmlType(XamlParser.XFUri, nameof(ResourceDictionary), null), 
+							XamlParser.XFUri, 
+							rootNode.NamespaceResolver,
+							typeParser);
 						((ElementNode)resources).CollectionItems.Add(resourcesEN);
 					}
 					else if (resources is ListNode resourcesLN) { //multiple implicit resources
-						resources = new ElementNode(new XmlType(XamlParser.XFUri, nameof(ResourceDictionary), null), XamlParser.XFUri, rootNode.NamespaceResolver);
+						resources = new ElementNode(
+							new XmlType(XamlParser.XFUri, nameof(ResourceDictionary), null), 
+							XamlParser.XFUri, 
+							rootNode.NamespaceResolver,
+							typeParser);
 						foreach (var n in resourcesLN.CollectionItems)
 							((ElementNode)resources).CollectionItems.Add(n);
 					}
@@ -359,7 +380,8 @@ namespace Xamarin.Forms.Xaml
 
 		public class RuntimeRootNode : RootNode
 		{
-			public RuntimeRootNode(XmlType xmlType, object root, IXmlNamespaceResolver resolver) : base(xmlType, resolver)
+			public RuntimeRootNode(XmlType xmlType, object root, IXmlNamespaceResolver resolver, IXamlTypeParser typeParser) : 
+				base(xmlType, resolver, typeParser)
 			{
 				Root = root;
 			}

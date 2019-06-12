@@ -124,7 +124,7 @@ namespace Xamarin.Forms.Xaml
 				var xmlLineInfoProvider = serviceProvider.GetService(typeof (IXmlLineInfoProvider)) as IXmlLineInfoProvider;
 				if (xmlLineInfoProvider != null)
 					xmlLineInfo = xmlLineInfoProvider.XmlLineInfo;
-
+				
 				var split = match.Split(':');
 				if (split.Length > 2)
 					throw new ArgumentException();
@@ -164,9 +164,11 @@ namespace Xamarin.Forms.Xaml
 				if (type == null)
 					throw new NotSupportedException();
 
+				var typeParser = serviceProvider.GetService(typeof(IXamlTypeParser)) as IXamlTypeParser;
+
 				node = xmlLineInfo == null
-					? new ElementNode(xmltype, null, nsResolver)
-					: new ElementNode(xmltype, null, nsResolver, xmlLineInfo.LineNumber, xmlLineInfo.LinePosition);
+					? new ElementNode(xmltype, null, nsResolver, typeParser)
+					: new ElementNode(xmltype, null, nsResolver, typeParser, xmlLineInfo.LineNumber, xmlLineInfo.LinePosition);
 
 				if (remaining.StartsWith("}", StringComparison.Ordinal))
 				{

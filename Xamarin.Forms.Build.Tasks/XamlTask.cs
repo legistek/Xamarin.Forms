@@ -48,7 +48,7 @@ namespace Xamarin.Forms.Build.Tasks
 
 		public abstract bool Execute(out IList<Exception> thrownExceptions);
 
-		internal static ILRootNode ParseXaml(Stream stream, TypeReference typeReference)
+		internal static ILRootNode ParseXaml(Stream stream, TypeReference typeReference, IXamlTypeParser typeParser)
 		{
 			ILRootNode rootnode = null;
 			using (var reader = XmlReader.Create(stream)) {
@@ -62,7 +62,9 @@ namespace Xamarin.Forms.Build.Tasks
 					}
 
 					XamlParser.ParseXaml(
-						rootnode = new ILRootNode(new XmlType(reader.NamespaceURI, reader.Name, null), typeReference, reader as IXmlNamespaceResolver), reader);
+						rootnode = new ILRootNode(
+							new XmlType(reader.NamespaceURI, reader.Name, null), typeReference, reader as IXmlNamespaceResolver, typeParser), 
+						reader);
 					break;
 				}
 			}

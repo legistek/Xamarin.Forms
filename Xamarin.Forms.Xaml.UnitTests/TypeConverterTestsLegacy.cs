@@ -123,12 +123,13 @@ namespace Xamarin.Forms.Xaml.UnitTests
 			var bindable = new Bindable();
 
 			Assert.IsNull(bindable.Baz);
-			var rootNode = new XamlLoader.RuntimeRootNode(new XmlType("clr-namespace:Xamarin.Forms.Xaml.UnitTests;assembly=Xamarin.Forms.Xaml.UnitTests", "Bindable", null), bindable, null) {
+			var parser = new RuntimeXamlTypeParser();
+			var rootNode = new XamlLoader.RuntimeRootNode(new XmlType("clr-namespace:Xamarin.Forms.Xaml.UnitTests;assembly=Xamarin.Forms.Xaml.UnitTests", "Bindable", null), bindable, null, parser) {
 				Properties = {
 					{ new XmlName (null, "Baz"), node },
 				}
 			};
-			var context = new HydrationContext { RootElement = new Label() };
+			var context = new HydrationContext(parser) { RootElement = new Label() };
 			rootNode.Accept(new CreateValuesVisitor(context), null);
 			node.Accept(new ApplyPropertiesVisitor(context), rootNode);
 			Assert.AreEqual(baz, bindable.Baz);
@@ -142,12 +143,13 @@ namespace Xamarin.Forms.Xaml.UnitTests
 			var bindable = new Bindable();
 
 			Assert.IsNull(bindable.Baz);
-			var rootNode = new XamlLoader.RuntimeRootNode(new XmlType("clr-namespace:Xamarin.Forms.Xaml.UnitTests;assembly=Xamarin.Forms.Xaml.UnitTests", "Bindable", null), bindable, null) {
+			var parser = new RuntimeXamlTypeParser();
+			var rootNode = new XamlLoader.RuntimeRootNode(new XmlType("clr-namespace:Xamarin.Forms.Xaml.UnitTests;assembly=Xamarin.Forms.Xaml.UnitTests", "Bindable", null), bindable, null, parser) {
 				Properties = {
 					{ new XmlName (null, "Baz"), node },
 				}
 			};
-			var context = new HydrationContext { RootElement = new Label() };
+			var context = new HydrationContext(parser) { RootElement = new Label() };
 			rootNode.Accept(new CreateValuesVisitor(context), null);
 			Assert.Throws<XamlParseException>(() => node.Accept(new ApplyPropertiesVisitor(context), rootNode));
 		}
@@ -159,13 +161,14 @@ namespace Xamarin.Forms.Xaml.UnitTests
 			var bindable = new Bindable();
 
 			Assert.IsNull(bindable.Foo);
-			var rootNode = new XamlLoader.RuntimeRootNode(new XmlType("clr-namespace:Xamarin.Forms.Xaml.UnitTests;assembly=Xamarin.Forms.Xaml.UnitTests", "Bindable", null), bindable, null) {
+			var parser = new RuntimeXamlTypeParser();
+			var rootNode = new XamlLoader.RuntimeRootNode(new XmlType("clr-namespace:Xamarin.Forms.Xaml.UnitTests;assembly=Xamarin.Forms.Xaml.UnitTests", "Bindable", null), bindable, null, parser) {
 				Properties = {
 					{ new XmlName (null, "Foo"), node },
 				}
 			};
 
-			var context = new HydrationContext { RootElement = new Label() };
+			var context = new HydrationContext(parser) { RootElement = new Label() };
 			rootNode.Accept(new CreateValuesVisitor(context), null);
 			node.Accept(new ApplyPropertiesVisitor(context), rootNode);
 			Assert.IsNotNull(bindable.Foo);
@@ -180,12 +183,13 @@ namespace Xamarin.Forms.Xaml.UnitTests
 			var bindable = new Bindable();
 
 			Assert.IsNull(bindable.Bar);
-			var rootNode = new XamlLoader.RuntimeRootNode(new XmlType("clr-namespace:Xamarin.Forms.Xaml.UnitTests;assembly=Xamarin.Forms.Xaml.UnitTests", "Bindable", null), bindable, null) {
+			var parser = new RuntimeXamlTypeParser();
+			var rootNode = new XamlLoader.RuntimeRootNode(new XmlType("clr-namespace:Xamarin.Forms.Xaml.UnitTests;assembly=Xamarin.Forms.Xaml.UnitTests", "Bindable", null), bindable, null, parser) {
 				Properties = {
 					{ new XmlName (null, "Bar"), node },
 				}
 			};
-			var context = new HydrationContext { RootElement = new Label() };
+			var context = new HydrationContext(parser) { RootElement = new Label() };
 			rootNode.Accept(new CreateValuesVisitor(context), null);
 			node.Accept(new ApplyPropertiesVisitor(context), rootNode);
 			Assert.IsNotNull(bindable.Bar);
@@ -200,12 +204,13 @@ namespace Xamarin.Forms.Xaml.UnitTests
 			var bindable = new Bindable();
 
 			Assert.IsNull(Bindable.GetQux(bindable));
-			var rootNode = new XamlLoader.RuntimeRootNode(new XmlType("clr-namespace:Xamarin.Forms.Xaml.UnitTests;assembly=Xamarin.Forms.Xaml.UnitTests", "Bindable", null), bindable, null) {
+			var parser = new RuntimeXamlTypeParser();
+			var rootNode = new XamlLoader.RuntimeRootNode(new XmlType("clr-namespace:Xamarin.Forms.Xaml.UnitTests;assembly=Xamarin.Forms.Xaml.UnitTests", "Bindable", null), bindable, null, parser) {
 				Properties = {
 					{ new XmlName ("clr-namespace:Xamarin.Forms.Xaml.UnitTests;assembly=Xamarin.Forms.Xaml.UnitTests", "Bindable.Qux"), node },
 				}
 			};
-			var context = new HydrationContext { RootElement = new Label() };
+			var context = new HydrationContext(parser) { RootElement = new Label() };
 			rootNode.Accept(new CreateValuesVisitor(context), null);
 			node.Accept(new ApplyPropertiesVisitor(context), rootNode);
 			Assert.IsNotNull(Bindable.GetQux(bindable));
@@ -220,12 +225,13 @@ namespace Xamarin.Forms.Xaml.UnitTests
 			var bindable = new Bindable();
 
 			Assert.IsNull(bindable.FooBar);
-			var rootNode = new XamlLoader.RuntimeRootNode(new XmlType("clr-namespace:Xamarin.Forms.Xaml.UnitTests;assembly=Xamarin.Forms.Xaml.UnitTests", "Bindable", null), bindable, null) {
+			var parser = new RuntimeXamlTypeParser();
+			var rootNode = new XamlLoader.RuntimeRootNode(new XmlType("clr-namespace:Xamarin.Forms.Xaml.UnitTests;assembly=Xamarin.Forms.Xaml.UnitTests", "Bindable", null), bindable, null, parser) {
 				Properties = {
 					{ new XmlName (null, "FooBar"), node },
 				}
 			};
-			var context = new HydrationContext { RootElement = new Label() };
+			var context = new HydrationContext(parser) { RootElement = new Label() };
 			rootNode.Accept(new CreateValuesVisitor(context), null);
 			node.Accept(new ApplyPropertiesVisitor(context), rootNode);
 

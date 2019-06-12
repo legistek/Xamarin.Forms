@@ -19,9 +19,8 @@ namespace Xamarin.Forms.Xaml.Internals
 				IRootObjectProvider = new XamlRootObjectProvider(context.RootElement);
 			if (context != null && node != null)
 			{
-				IXamlTypeResolver = new XamlTypeResolver(node.NamespaceResolver, XamlParser.GetElementType,
-					context.RootElement.GetType().GetTypeInfo().Assembly);
-
+				IXamlTypeResolver = new XamlTypeResolver(node.NamespaceResolver, context.TypeParser);
+				IXamlTypeParser = context.TypeParser;
 				Add(typeof(IReferenceProvider), new ReferenceProvider(node));
 			}
 
@@ -40,6 +39,12 @@ namespace Xamarin.Forms.Xaml.Internals
 		{
 			get { return (IProvideValueTarget)GetService(typeof (IProvideValueTarget)); }
 			set { services[typeof (IProvideValueTarget)] = value; }
+		}
+
+		internal IXamlTypeParser IXamlTypeParser
+		{
+			get { return (IXamlTypeParser)GetService(typeof(IXamlTypeParser)); }
+			set { services[typeof(IXamlTypeParser)] = value; }
 		}
 
 		internal IXamlTypeResolver IXamlTypeResolver
@@ -188,21 +193,18 @@ namespace Xamarin.Forms.Xaml.Internals
 
 	public class XamlTypeResolver : IXamlTypeResolver
 	{
-		readonly Assembly currentAssembly;
-		readonly GetTypeFromXmlName getTypeFromXmlName;
+		readonly IXamlTypeParser typeParser;
 		readonly IXmlNamespaceResolver namespaceResolver;
 
-		public XamlTypeResolver(IXmlNamespaceResolver namespaceResolver, Assembly currentAssembly)
-			: this(namespaceResolver, XamlParser.GetElementType, currentAssembly)
+		public XamlTypeResolver(IXmlNamespaceResolver namespaceResolver, Assembly assembly)
+			: this(namespaceResolver, new RuntimeXamlTypeParser(assembly))
 		{
 		}
 
-		internal XamlTypeResolver(IXmlNamespaceResolver namespaceResolver, GetTypeFromXmlName getTypeFromXmlName,
-			Assembly currentAssembly)
+		internal XamlTypeResolver(IXmlNamespaceResolver namespaceResolver, IXamlTypeParser typeParser)
 		{
-			this.currentAssembly = currentAssembly;
 			this.namespaceResolver = namespaceResolver ?? throw new ArgumentNullException();
-			this.getTypeFromXmlName = getTypeFromXmlName ?? throw new ArgumentNullException();
+			this.typeParser = typeParser ?? throw new ArgumentNullException();
 		}
 
 		Type IXamlTypeResolver.Resolve(string qualifiedTypeName, IServiceProvider serviceProvider)
@@ -248,10 +250,8 @@ namespace Xamarin.Forms.Xaml.Internals
 				return null;
 			}
 
-			return getTypeFromXmlName(new XmlType(namespaceuri, name, null), xmlLineInfo, currentAssembly, out exception);
+			return typeParser.GetManagedType<Type>(new XmlType(namespaceuri, name, null), xmlLineInfo, out exception);
 		}
-
-		internal delegate Type GetTypeFromXmlName(XmlType xmlType, IXmlLineInfo xmlInfo, Assembly currentAssembly, out XamlParseException exception);
 	}
 
 	class XamlRootObjectProvider : IRootObjectProvider

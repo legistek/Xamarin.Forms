@@ -792,11 +792,15 @@ namespace Xamarin.Forms.Xaml.UnitTests
 		public void BindingIsResolvedAsBindingExtension()
 		// https://github.com/xamarin/Xamarin.Forms/issues/3606#issuecomment-422377338
 		{
-			var bindingType = XamlParser.GetElementType(new XmlType("http://xamarin.com/schemas/2014/forms", "Binding", null), null, null, out var ex);
+			var runtimeTypeParser = new RuntimeXamlTypeParser();
+			var bindingType = runtimeTypeParser.GetManagedType<Type>(new XmlType("http://xamarin.com/schemas/2014/forms", "Binding", null), null, out XamlParseException ex);
+			
 			Assert.That(ex, Is.Null);
 			Assert.That(bindingType, Is.EqualTo(typeof(BindingExtension)));
 
-			var bindingTypeRef = new XmlType("http://xamarin.com/schemas/2014/forms", "Binding", null).GetTypeReference(ModuleDefinition.CreateModule("foo", ModuleKind.Dll), null);
+			var xamlcTypeParser = new XamlCTypeParser(ModuleDefinition.CreateModule("foo", ModuleKind.Dll));
+			var bindingTypeRef = xamlcTypeParser.GetManagedType<TypeReference>(
+				new XmlType("http://xamarin.com/schemas/2014/forms", "Binding", null), null, out _);
 			Assert.That(bindingType.FullName, Is.EqualTo("Xamarin.Forms.Xaml.BindingExtension"));
 		}
 	}

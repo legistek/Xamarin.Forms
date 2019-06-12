@@ -39,9 +39,7 @@ namespace Xamarin.Forms.Build.Tasks
 		{
 		}
 
-		static int generatedTypesCount;
-		List<XmlnsDefinitionAttribute> _xmlnsDefinitions;
-		Dictionary<string, ModuleDefinition> _xmlnsModules;
+		static int generatedTypesCount;		
 		internal static CodeDomProvider Provider = new CSharpCodeProvider();
 
 		public string XamlFile { get; }
@@ -60,6 +58,8 @@ namespace Xamarin.Forms.Build.Tasks
 		bool XamlResourceIdOnly { get; set; }
 		internal IEnumerable<CodeMemberField> NamedFields { get; set; }
 		internal CodeTypeReference BaseType { get; set; }
+
+		private XamlGTypeParser _TypeParser;
 
 		public XamlGenerator(
 			string xamlFile,
@@ -90,18 +90,14 @@ namespace Xamarin.Forms.Build.Tasks
 			Logger?.LogMessage(MessageImportance.Low, " TargetPath: {0}", TargetPath);
 			Logger?.LogMessage(MessageImportance.Low, " AssemblyName: {0}", AssemblyName);
 			Logger?.LogMessage(MessageImportance.Low, " OutputFile {0}", OutputFile);
-
-			using (StreamReader reader = File.OpenText(XamlFile))
-				if (!ParseXaml(reader))
-					return false;
-
-			try
+			
+			using (_TypeParser = new XamlGTypeParser(this.References))
 			{
+				using (StreamReader reader = File.OpenText(XamlFile))
+					if (!ParseXaml(reader))
+						return false;
+
 				GenerateCode();
-			}
-			finally
-			{
-				CleanupXmlnsAssemblyData();
 			}
 
 			return true;
@@ -160,7 +156,7 @@ namespace Xamarin.Forms.Build.Tasks
 			NamedFields = GetCodeMemberFields(root, nsmgr);
 			var typeArguments = GetAttributeValue(root, "TypeArguments", XamlParser.X2006Uri, XamlParser.X2009Uri);
 			var xmlType = new XmlType(root.NamespaceURI, root.LocalName, typeArguments != null ? TypeArgumentsParser.ParseExpression(typeArguments, nsmgr, null) : null);
-			BaseType = GetType(xmlType, root.GetNamespaceOfPrefix);
+			BaseType = _TypeParser.GetType(xmlType);
 
 			return true;
 		}
@@ -301,7 +297,7 @@ namespace Xamarin.Forms.Build.Tasks
 
 				yield return new CodeMemberField {
 					Name = name,
-					Type = GetType(xmlType, node.GetNamespaceOfPrefix),
+					Type = _TypeParser.GetType(xmlType),
 					Attributes = access,
 					CustomAttributes = { GeneratedCodeAttrDecl }
 				};
@@ -321,48 +317,7 @@ namespace Xamarin.Forms.Build.Tasks
 				compileValue = parts[indexOfCompile + 1].Trim('"', '\'');
 			return compileValue.Equals("true", StringComparison.InvariantCultureIgnoreCase);
 		}
-
-		CodeTypeReference GetType(XmlType xmlType,
-			Func<string, string> getNamespaceOfPrefix = null)
-		{
-			CodeTypeReference returnType = null;
-			var ns = GetClrNamespace(xmlType.NamespaceUri);
-			if (ns == null) {
-				// It's an external, non-built-in namespace URL.
-				returnType = GetCustomNamespaceUrlType(xmlType);
-			}
-			else {
-				var type = xmlType.Name;
-				type = $"{ns}.{type}";
-
-				if (xmlType.TypeArguments != null)
-					type = $"{type}`{xmlType.TypeArguments.Count}";
-
-				returnType = new CodeTypeReference(type);
-			}
-
-			returnType.Options |= CodeTypeReferenceOptions.GlobalReference;
-
-			if (xmlType.TypeArguments != null)
-				foreach (var typeArg in xmlType.TypeArguments)
-					returnType.TypeArguments.Add(GetType(typeArg, getNamespaceOfPrefix));
-
-			return returnType;
-		}
-
-		static string GetClrNamespace(string namespaceuri)
-		{
-			if (namespaceuri == XamlParser.XFUri)
-				return "Xamarin.Forms";
-			if (namespaceuri == XamlParser.X2009Uri)
-				return "System";
-			if (namespaceuri != XamlParser.X2006Uri && 
-				!namespaceuri.StartsWith("clr-namespace", StringComparison.InvariantCulture) &&  
-				!namespaceuri.StartsWith("using:", StringComparison.InvariantCulture))
-				return null;
-			return XmlnsHelper.ParseNamespaceFromXmlns(namespaceuri);
-		}
-
+	
 		static string GetAttributeValue(XmlNode node, string localName, params string[] namespaceURIs)
 		{
 			if (node == null)
@@ -379,79 +334,6 @@ namespace Xamarin.Forms.Build.Tasks
 			}
 			return null;
 		}		
-
-		void GatherXmlnsDefinitionAttributes()
-		{
-			_xmlnsDefinitions = new List<XmlnsDefinitionAttribute>();
-			_xmlnsModules = new Dictionary<string, ModuleDefinition>();
-
-			if (string.IsNullOrEmpty(References))
-				return;
-
-			string[] paths = References.Split(';').Distinct().ToArray();
-
-			foreach (var path in paths) {
-				string asmName = Path.GetFileName(path);
-				if (AssemblyIsSystem(asmName))
-					// Skip the myriad "System." assemblies and others
-					continue;				
-
-				using (var asmDef = AssemblyDefinition.ReadAssembly(path)) {
-					foreach (var ca in asmDef.CustomAttributes) {
-						if (ca.AttributeType.FullName == typeof(XmlnsDefinitionAttribute).FullName) {
-							_xmlnsDefinitions.Add(ca.GetXmlnsDefinition(asmDef));
-							_xmlnsModules[asmDef.FullName] = asmDef.MainModule;
-						}
-					}					
-				}								
-			}
-		}
-
-		bool AssemblyIsSystem(string name)
-		{
-			if (name.StartsWith("System.", StringComparison.CurrentCultureIgnoreCase))
-				return true;
-			else if (name.Equals("mscorlib.dll", StringComparison.CurrentCultureIgnoreCase))
-				return true;
-			else if (name.Equals("netstandard.dll", StringComparison.CurrentCultureIgnoreCase))
-				return true;
-			else
-				return false;
-		}
-
-		CodeTypeReference GetCustomNamespaceUrlType(XmlType xmlType)
-		{
-			if (_xmlnsDefinitions == null)
-				GatherXmlnsDefinitionAttributes();
-
-			IList<XamlLoader.FallbackTypeInfo> potentialTypes;
-			TypeReference typeReference = xmlType.GetTypeReference<TypeReference>(
-				_xmlnsDefinitions,
-				null,
-				(typeInfo) =>
-				{
-					ModuleDefinition module = null;
-					if (!_xmlnsModules.TryGetValue(typeInfo.AssemblyName, out module))
-						return null;
-					string typeName = typeInfo.TypeName.Replace('+', '/'); //Nested types
-					string fullName = $"{typeInfo.ClrNamespace}.{typeInfo.TypeName}";
-					return module.Types.Where(t => t.FullName == fullName).FirstOrDefault();
-				},
-				out potentialTypes);
-
-			if (typeReference == null)
-				throw new Exception($"Type {xmlType.Name} not found in xmlns {xmlType.NamespaceUri}");
-
-			return new CodeTypeReference(typeReference.FullName);
-		}
-
-		void CleanupXmlnsAssemblyData()
-		{			
-			if ( _xmlnsModules != null ) {
-				foreach (var moduleDef in _xmlnsModules.Values) {
-					moduleDef.Dispose();
-				}
-			}
-		}
 	}
 }
+

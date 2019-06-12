@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Xml;
-
+using Mono.Cecil;
 using Mono.Cecil.Cil;
 
 using Xamarin.Forms.Build.Tasks;
@@ -31,7 +31,7 @@ namespace Xamarin.Forms.Core.XamlC
 			else
 				xmlType = new XmlType(node.NamespaceResolver.LookupNamespace(""), split[0], null);
 
-			var typeRef = xmlType.GetTypeReference(module, (IXmlLineInfo)node);
+			var typeRef = context.TypeParser.GetManagedType<TypeReference>(xmlType, node, out _);
 			if (typeRef == null)
 				goto error;
 

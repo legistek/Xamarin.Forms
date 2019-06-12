@@ -11,7 +11,7 @@ using Xamarin.Forms.Controls;
 using Xamarin.Forms.MSBuild.UnitTests;
 
 namespace Xamarin.Forms.Xaml.UnitTests
-{	
+{		
 	public partial class Gh2691 : ContentPage
 	{
 		public Gh2691()
@@ -120,15 +120,21 @@ namespace Xamarin.Forms.Xaml.UnitTests
 					Language = "C#",
 					XamlFiles = new[] { item },
 					OutputFiles = new [] { new TaskItem(xamlOutputFile) },
-					References = Path.GetFullPath(
-						Path.Combine(
-							Directory.GetCurrentDirectory(), "Xamarin.Forms.Controls.dll"))
+					References = 
+						BuildAsmString("Xamarin.Forms.Controls.dll") + ";" +
+						BuildAsmString("Xamarin.Forms.Core.dll") + ";" +
+						BuildAsmString("Xamarin.Forms.Xaml.dll")
 				};
 
 				var generator = new XamlGenerator(item, xamlg.Language, xamlg.AssemblyName, xamlOutputFile, xamlg.References, null);
 				Assert.IsTrue(generator.Execute());
 
 				Assert.IsTrue(xamlg.Execute());
+			}
+
+			private string BuildAsmString(string asmName)
+			{
+				return Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), asmName));
 			}
 
 			string CreateXamlInputFile()

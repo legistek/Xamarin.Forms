@@ -30,7 +30,7 @@ namespace Xamarin.Forms.Build.Tasks
 				node.CollectionItems.Clear();
 			}
 
-			var typeref = module.ImportReference(XmlTypeExtensions.GetTypeReference(valueNode.Value as string, module, node as BaseNode));
+			var typeref = module.ImportReference(XmlTypeExtensions.GetTypeReference(valueNode.Value as string, node as BaseNode, context));
 
 			context.TypeExtensions[node] = typeref ?? throw new XamlParseException($"Can't resolve type `{valueNode.Value}'.", node as IXmlLineInfo);
 
