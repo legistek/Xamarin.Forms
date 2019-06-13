@@ -56,12 +56,13 @@ namespace Xamarin.Forms.Build.Tasks
 				try
 				{
 					type = GetTypeReference(xmlType, lineInfo);
+					if ( type != null )
+						_typeCache[xmlType] = type;
 				}
 				catch (XamlParseException xpe)
 				{
 					exception = xpe;
-				}
-				_typeCache[xmlType] = type;
+				}				
 			}
 			return type as T;
 		}
