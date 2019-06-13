@@ -103,8 +103,9 @@ namespace Xamarin.Forms.Platform.UWP
 			if (lv != null)
 			{
 				lv.SetValue(MeasuredEstimateProperty, result.Height);
-				SetDafaultColor();
 			}
+
+			SetDefaultSwitchColor();
 
 			return result;
 		}
@@ -202,7 +203,7 @@ namespace Xamarin.Forms.Platform.UWP
 			}
 		}
 
-		void SetDafaultColor()
+		void SetDefaultSwitchColor()
 		{
 			if (_defaultOnColor == null && Cell is SwitchCell)
 			{
@@ -235,6 +236,9 @@ namespace Xamarin.Forms.Platform.UWP
 
 		void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
 		{
+			if (args.NewValue == null)
+				return;
+
 			// We don't want to set the Cell until the ListView is realized, just in case the 
 			// Cell has an ItemTemplate. Instead, we'll store the new data item, and it will be
 			// set on MeasureOverrideDelegate. However, if the parent is a TableView, we'll already 

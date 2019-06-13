@@ -21,7 +21,6 @@
     <DefineConstants>TRACE;DEBUG;__WINDOWS__;UITEST</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>0114;0108;4014;0649;0169;0168;0219</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -31,7 +30,6 @@
     <DefineConstants>TRACE;__WINDOWS__;UITEST</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>0114;0108;4014;0649;0169;0168;0219</NoWarn>
   </PropertyGroup>
   <ItemGroup>
@@ -52,13 +50,15 @@
     <PackageReference Include="DotNetSeleniumExtras.PageObjects" Version="3.11.0" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="NUnit" Version="2.6.4" />
+    <PackageReference Include="NUnitTestAdapter">
+      <Version>2.1.1</Version>
+    </PackageReference>
     <PackageReference Include="Selenium.Support" Version="3.14.0" />
     <PackageReference Include="Selenium.WebDriver" Version="3.14.0" />
     <PackageReference Include="Xam.Plugin.DeviceInfo" Version="3.0.2" />
     <PackageReference Include="Xamarin.UITest" Version="2.2.7" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WindowsTestBase.cs" />
     <Compile Include="WindowsTestServer.cs" />
     <Compile Include="WinDriverApp.cs" />

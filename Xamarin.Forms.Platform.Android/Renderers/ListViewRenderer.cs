@@ -9,6 +9,7 @@ using Xamarin.Forms.Internals;
 using System;
 using Xamarin.Forms.PlatformConfiguration.AndroidSpecific;
 using Android.Widget;
+using Android.Runtime;
 
 namespace Xamarin.Forms.Platform.Android
 {
@@ -36,6 +37,7 @@ namespace Xamarin.Forms.Platform.Android
 		}
 
 		[Obsolete("This constructor is obsolete as of version 2.5. Please use ListViewRenderer(Context) instead.")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
 		public ListViewRenderer()
 		{
 			AutoPackage = false;
@@ -101,6 +103,9 @@ namespace Xamarin.Forms.Platform.Android
 			return new Size(40, 40);
 		}
 
+		protected virtual SwipeRefreshLayout CreateNativePullToRefresh(Context context)
+			=> new SwipeRefreshLayoutWithFixedNestedScrolling(context);
+
 		protected override void OnAttachedToWindow()
 		{
 			base.OnAttachedToWindow();
@@ -151,9 +156,11 @@ namespace Xamarin.Forms.Platform.Android
 				{
 					var ctx = Context;
 					nativeListView = CreateNativeControl();
-					_refresh = new SwipeRefreshLayout(ctx);
+					if (Forms.IsLollipopOrNewer)
+						nativeListView.NestedScrollingEnabled = true;
+					_refresh = CreateNativePullToRefresh(ctx);
 					_refresh.SetOnRefreshListener(this);
-					_refresh.AddView(nativeListView, LayoutParams.MatchParent);
+					_refresh.AddView(nativeListView, new LayoutParams(LayoutParams.MatchParent, LayoutParams.MatchParent));
 					SetNativeControl(nativeListView, _refresh);
 
 					_headerView = new Container(ctx);
@@ -384,6 +391,9 @@ namespace Xamarin.Forms.Platform.Android
 					_refresh.Refreshing = false;
 					_refresh.Post(() =>
 					{
+					    if(_refresh.IsDisposed())
+						    return;
+						
 						_refresh.Refreshing = true;
 					});
 				}
@@ -495,7 +505,7 @@ namespace Xamarin.Forms.Platform.Android
 
 			protected override void OnMeasure(int widthMeasureSpec, int heightMeasureSpec)
 			{
-				if (_child == null)
+				if (_child?.Element == null)
 				{
 					SetMeasuredDimension(0, 0);
 					return;
@@ -507,14 +517,63 @@ namespace Xamarin.Forms.Platform.Android
 
 				var width = (int)ctx.FromPixels(MeasureSpecFactory.GetSize(widthMeasureSpec));
 
-				SizeRequest request = _child.Element.Measure(width, double.PositiveInfinity, MeasureFlags.IncludeMargins);
-				Xamarin.Forms.Layout.LayoutChildIntoBoundingRegion(_child.Element, new Rectangle(0, 0, width, request.Request.Height));
+				SizeRequest request = element.Measure(width, double.PositiveInfinity, MeasureFlags.IncludeMargins);
+				Xamarin.Forms.Layout.LayoutChildIntoBoundingRegion(element, new Rectangle(0, 0, width, request.Request.Height));
 
 				int widthSpec = MeasureSpecFactory.MakeMeasureSpec((int)ctx.ToPixels(width), MeasureSpecMode.Exactly);
 				int heightSpec = MeasureSpecFactory.MakeMeasureSpec((int)ctx.ToPixels(request.Request.Height), MeasureSpecMode.Exactly);
 
 				_child.View.Measure(widthMeasureSpec, heightMeasureSpec);
 				SetMeasuredDimension(widthSpec, heightSpec);
+			}
+		}
+
+		class SwipeRefreshLayoutWithFixedNestedScrolling : SwipeRefreshLayout
+		{
+			float _touchSlop;
+			float _initialDownY;
+			bool _nestedScrollAccepted;
+			bool _nestedScrollCalled;
+
+			public SwipeRefreshLayoutWithFixedNestedScrolling(Context ctx) : base(ctx)
+			{
+				_touchSlop = ViewConfiguration.Get(ctx).ScaledTouchSlop;
+			}
+
+			public override bool OnInterceptTouchEvent(MotionEvent ev)
+			{
+				if (ev.Action == MotionEventActions.Down)
+					_initialDownY = ev.GetAxisValue(Axis.Y);
+
+				var isBeingDragged = base.OnInterceptTouchEvent(ev);
+
+				if (!isBeingDragged && ev.Action == MotionEventActions.Move && _nestedScrollAccepted && !_nestedScrollCalled)
+				{
+					var y = ev.GetAxisValue(Axis.Y);
+					var dy = (y - _initialDownY) / 2;
+					isBeingDragged = dy > _touchSlop;
+				}
+
+				return isBeingDragged;
+			}
+
+			public override void OnNestedScrollAccepted(AView child, AView target, [GeneratedEnum] ScrollAxis axes)
+			{
+				base.OnNestedScrollAccepted(child, target, axes);
+				_nestedScrollAccepted = true;
+				_nestedScrollCalled = false;
+			}
+
+			public override void OnStopNestedScroll(AView child)
+			{
+				base.OnStopNestedScroll(child);
+				_nestedScrollAccepted = false;
+			}
+
+			public override void OnNestedScroll(AView target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed)
+			{
+				base.OnNestedScroll(target, dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed);
+				_nestedScrollCalled = true;
 			}
 		}
 	}

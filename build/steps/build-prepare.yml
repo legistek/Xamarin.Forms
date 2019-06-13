@@ -1,37 +1,13 @@
 steps:
   - powershell: |
-       Write-Host "Finding the right branch"
        $sourceBranchName = "" + $env:BUILD_SOURCEBRANCHNAME
        $sourceBranch = "" + $env:BUILD_SOURCEBRANCH
-       $sourceVersion = "" + $env:BUILD_SOURCEVERSION
+       $publicTags = "" + $env:PUBLICTAGS
        $tags = New-Object System.Collections.ArrayList
-       $realBuildName = ""
        $buildId = "" + $env:BUILD_BUILDID
-
-       if($sourceBranch) {
-           $branchParts = $sourceBranch.Split('/')
-
-           if(($sourceBranchName -eq "merge" -or $sourceBranchName -eq "head")  -and $branchParts.Count -eq 4 -and $branchParts[1] -contains "pull") {
-               $realBuildName = "PR-{0} - ({1})" -f  $branchParts[2],$buildId
-           } else {
-               $shortVersion = If ($sourceVersion.Length -gt 7) { $sourceVersion.Substring(0,7) } Else { $sourceVersion }
-               $realBuildName = "{0}-{1} ({2})" -f $sourceBranchName,$shortVersion,$buildId
-           }
-       }
-
-       #Update VSTS build number
-       if($realBuildName) {
-           Write-Host "##vso[build.updatebuildnumber]$realBuildName"
-       }
-    displayName: 'Set Build Number'
-  - powershell: |
-       Write-Host "Finding the right branch"
-       $sourceBranchName =  ""+ $env:BUILD_SOURCEBRANCHNAME
-       $sourceBranch = ""+  $env:BUILD_SOURCEBRANCH
-       $publicTags =  ""+ $env:PUBLICTAGS
-       $tags = New-Object System.Collections.ArrayList
-       $buildId = ""+ $env:BUILD_BUILDID
-       $sorceV = "" +$env:BUILD_SOURCEVERSION
+       $sorceV = "" + $env:BUILD_SOURCEVERSION
+       $sign = "" + $env:SIGN
+       $reason = "" + $env:BUILD_REASON
 
        echo $sorceV
        echo $sourceBranchName
@@ -67,22 +43,34 @@ steps:
                }
            }
        }
+       if($reason -eq "Schedule")
+        {
+            $tags.Add("nightly-release")
+        }
        #Tag this build
        #check PublicTags also add them to the tag list
        foreach($publicTag in $publicTags.Split(';'))
        {
-           if($publicTag){
-               $tags.Add($publicTag);
-           }
+            if($publicTag){
+                $tags.Add($publicTag);
+            }
        }
 
        #Add tags to the VSTS Build
        foreach ($tag in $tags) {
-          Write-Host "##vso[build.addbuildtag]$tag"
+            if($tag -eq "public-release")
+            {
+                $sign = 'true'
+            }
+            if($tag -eq "nightly-release")
+            {
+                $sign = 'true'
+            }
+            Write-Host "##vso[build.addbuildtag]$tag"
        }
-
+       Write-Host "Sign: $sign"
        $publicTags = $tags -join ';'
        Write-Host "##vso[task.setvariable variable=publictags;isOutput=true;]$publicTags"
-
-
-    displayName: 'Tag and name build copy'
+       Write-Host "##vso[task.setvariable variable=signnuget;isOutput=true;]$sign"
+    displayName: 'Tag and name build'
+    name: prepare

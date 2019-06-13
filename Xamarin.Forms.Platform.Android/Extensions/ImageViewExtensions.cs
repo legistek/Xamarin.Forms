@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using Android.Graphics;
-using Android.Graphics.Drawables;
+﻿using System.Threading.Tasks;
 using AImageView = Android.Widget.ImageView;
 
 namespace Xamarin.Forms.Platform.Android
@@ -14,7 +11,6 @@ namespace Xamarin.Forms.Platform.Android
 		public static Task UpdateBitmap(this AImageView imageView, ImageSource newImageSource, ImageSource previousImageSourc) =>
 			imageView.UpdateBitmap(null, null, newImageSource, previousImageSourc);
 
-		// TODO hartez 2017/04/07 09:33:03 Review this again, not sure it's handling the transition from previousImage to 'null' newImage correctly
 		static async Task UpdateBitmap(
 			this AImageView imageView,
 			IImageElement newView,
@@ -24,22 +20,19 @@ namespace Xamarin.Forms.Platform.Android
 		{
 
 			IImageController imageController = newView as IImageController;
-			newImageSource = newView?.Source;
-			previousImageSource = previousView?.Source;
+			newImageSource = newImageSource ?? newView?.Source;
+			previousImageSource = previousImageSource ?? previousView?.Source;
 
-			if (newImageSource == null || imageView.IsDisposed())
+			if (imageView.IsDisposed())
 				return;
 
-			if (Equals(previousImageSource, newImageSource))
+			if (newImageSource != null && Equals(previousImageSource, newImageSource))
 				return;
 
 			imageController?.SetIsLoading(true);
 
 			(imageView as IImageRendererController)?.SkipInvalidate();
 			imageView.SetImageResource(global::Android.Resource.Color.Transparent);
-
-			bool setByImageViewHandler = false;
-			Bitmap bitmap = null;
 
 			try
 			{
@@ -49,38 +42,31 @@ namespace Xamarin.Forms.Platform.Android
 					if (imageViewHandler != null)
 					{
 						await imageViewHandler.LoadImageAsync(newImageSource, imageView);
-						setByImageViewHandler = true;
 					}
 					else
 					{
-						var imageSourceHandler = Internals.Registrar.Registered.GetHandlerForObject<IImageSourceHandler>(newImageSource);
-						bitmap = await imageSourceHandler.LoadImageAsync(newImageSource, imageView.Context);
+						using (var drawable = await imageView.Context.GetFormsDrawableAsync(newImageSource))
+						{
+							// only set the image if we are still on the same one
+							if (!imageView.IsDisposed() && Equals(newView?.Source, newImageSource))
+								imageView.SetImageDrawable(drawable);
+						}
 					}
 				}
-			}
-			catch (TaskCanceledException)
-			{
-				imageController?.SetIsLoading(false);
-			}
-
-			// Check if the source on the new image has changed since the image was loaded
-			if (!Equals(newView?.Source, newImageSource))
-			{
-				bitmap?.Dispose();
-				return;
-			}
-
-			if (!setByImageViewHandler && !imageView.IsDisposed())
-			{
-				if (bitmap == null && newImageSource is FileImageSource)
-					imageView.SetImageResource(ResourceManager.GetDrawableByName(((FileImageSource)newImageSource).File));
 				else
-					imageView.SetImageBitmap(bitmap);
+				{
+					imageView.SetImageBitmap(null);
+				}
 			}
-
-			bitmap?.Dispose();
-			imageController?.SetIsLoading(false);
-			imageController?.NativeSizeChanged();
+			finally
+			{
+				// only mark as finished if we are still working on the same image
+				if (Equals(newView?.Source, newImageSource))
+				{
+					imageController?.SetIsLoading(false);
+					imageController?.NativeSizeChanged();
+				}
+			}
 		}
 	}
 }

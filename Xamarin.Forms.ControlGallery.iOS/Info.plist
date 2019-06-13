@@ -131,5 +131,17 @@
 	<string>XamControl</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access to photos.</string>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>XSAppIconAssets</key>
+	<string>Assets.xcassets/AppIcon.appiconset</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>ionicons.ttf</string>
+		<string>Fonts/Roboto-Italic.ttf</string>
+		<string>Fonts/Roboto-Bold.ttf</string>
+		<string>Fonts/Roboto-Regular.ttf</string>
+		<string>Fonts/Roboto-BoldItalic.ttf</string>
+	</array>
 </dict>
 </plist>

@@ -6,11 +6,11 @@ using Xamarin.Forms.Internals;
 
 namespace Xamarin.Forms
 {
-	public partial class VisualElement : Element, IAnimatable, IVisualElementController, IResourcesProvider, IStyleElement, IFlowDirectionController, IPropertyPropagationController, IVisualController
+	public partial class VisualElement : NavigableElement, IAnimatable, IVisualElementController, IResourcesProvider, IStyleElement, IFlowDirectionController, IPropertyPropagationController, IVisualController, ITabStopElement
 	{
-		internal static readonly BindablePropertyKey NavigationPropertyKey = BindableProperty.CreateReadOnly("Navigation", typeof(INavigation), typeof(VisualElement), default(INavigation));
+		public new static readonly BindableProperty NavigationProperty = NavigableElement.NavigationProperty;
 
-		public static readonly BindableProperty NavigationProperty = NavigationPropertyKey.BindableProperty;
+		public new static readonly BindableProperty StyleProperty = NavigableElement.StyleProperty;
 
 		public static readonly BindableProperty InputTransparentProperty = BindableProperty.Create("InputTransparent", typeof(bool), typeof(VisualElement), default(bool));
 
@@ -61,13 +61,20 @@ namespace Xamarin.Forms
 			BindableProperty.Create(nameof(Visual), typeof(IVisual), typeof(VisualElement), Forms.VisualMarker.MatchParent,
 									validateValue: (b, v) => v != null, propertyChanged: OnVisualChanged);
 
+		static IVisual _defaultVisual = Xamarin.Forms.VisualMarker.Default;
+		IVisual _effectiveVisual = _defaultVisual;
+
 		public IVisual Visual
 		{
 			get { return (IVisual)GetValue(VisualProperty); }
 			set { SetValue(VisualProperty, value); }
 		}
 
-		IVisual _effectiveVisual = Xamarin.Forms.VisualMarker.Default;
+		internal static void SetDefaultVisual(IVisual visual)
+		{
+			_defaultVisual = visual;
+		}
+
 		IVisual IVisualController.EffectiveVisual
 		{
 			get { return _effectiveVisual; }
@@ -165,9 +172,7 @@ namespace Xamarin.Forms
 
 		public static readonly BindableProperty TriggersProperty = TriggersPropertyKey.BindableProperty;
 
-		public static readonly BindableProperty StyleProperty = BindableProperty.Create("Style", typeof(Style), typeof(VisualElement), default(Style),
-			propertyChanged: (bindable, oldvalue, newvalue) => ((VisualElement)bindable)._mergedStyle.Style = (Style)newvalue);
-
+		
 		public static readonly BindableProperty WidthRequestProperty = BindableProperty.Create("WidthRequest", typeof(double), typeof(VisualElement), -1d, propertyChanged: OnRequestChanged);
 
 		public static readonly BindableProperty HeightRequestProperty = BindableProperty.Create("HeightRequest", typeof(double), typeof(VisualElement), -1d, propertyChanged: OnRequestChanged);
@@ -229,7 +234,7 @@ namespace Xamarin.Forms
 			{
 				if (value == _effectiveFlowDirection)
 					return;
-
+				
 				_effectiveFlowDirection = value;
 				InvalidateMeasureInternal(InvalidationTrigger.Undefined);
 				OnPropertyChanged(FlowDirectionProperty.PropertyName);
@@ -240,7 +245,7 @@ namespace Xamarin.Forms
 
 		readonly Dictionary<Size, SizeRequest> _measureCache = new Dictionary<Size, SizeRequest>();
 
-		internal readonly MergedStyle _mergedStyle;
+		
 
 		int _batched;
 		LayoutConstraint _computedConstraint;
@@ -263,8 +268,7 @@ namespace Xamarin.Forms
 
 		internal VisualElement()
 		{
-			Navigation = new NavigationProxy();
-			_mergedStyle = new MergedStyle(GetType(), this);
+			
 		}
 
 		public double AnchorX
@@ -353,12 +357,6 @@ namespace Xamarin.Forms
 			set { SetValue(MinimumWidthRequestProperty, value); }
 		}
 
-		public INavigation Navigation
-		{
-			get { return (INavigation)GetValue(NavigationProperty); }
-			internal set { SetValue(NavigationPropertyKey, value); }
-		}
-
 		public double Opacity
 		{
 			get { return (double)GetValue(OpacityProperty); }
@@ -401,12 +399,6 @@ namespace Xamarin.Forms
 			set => SetValue(ScaleYProperty, value);
 		}
 
-		public Style Style
-		{
-			get { return (Style)GetValue(StyleProperty); }
-			set { SetValue(StyleProperty, value); }
-		}
-
 		public int TabIndex
 		{
 			get => (int)GetValue(TabIndexProperty);
@@ -426,20 +418,6 @@ namespace Xamarin.Forms
 		protected virtual void OnTabStopPropertyChanged(bool oldValue, bool newValue) { }
 
 		protected virtual bool TabStopDefaultValueCreator() => true;
-
-		[TypeConverter(typeof(ListStringTypeConverter))]
-		public IList<string> StyleClass
-		{
-			get { return @class; }
-			set { @class = value; }
-		}
-
-		[TypeConverter(typeof(ListStringTypeConverter))]
-		public IList<string> @class
-		{
-			get { return _mergedStyle.StyleClass; }
-			set { _mergedStyle.StyleClass = value; }
-		}
 
 		public double TranslationX
 		{
@@ -564,12 +542,6 @@ namespace Xamarin.Forms
 			}
 		}
 
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public NavigationProxy NavigationProxy
-		{
-			get { return Navigation as NavigationProxy; }
-		}
-
 		internal LayoutConstraint SelfConstraint
 		{
 			get { return _selfConstraint; }
@@ -652,6 +624,7 @@ namespace Xamarin.Forms
 		public event EventHandler<FocusEventArgs> Focused;
 
 		[Obsolete("OnSizeRequest is obsolete as of version 2.2.0. Please use OnMeasure instead.")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
 		public virtual SizeRequest GetSizeRequest(double widthConstraint, double heightConstraint)
 		{
 			SizeRequest cachedResult;
@@ -731,7 +704,7 @@ namespace Xamarin.Forms
 
 			if (includeMargins)
 			{
-				if (!margin.IsDefault)
+				if (!margin.IsEmpty)
 				{
 					result.Minimum = new Size(result.Minimum.Width + margin.HorizontalThickness, result.Minimum.Height + margin.VerticalThickness);
 					result.Request = new Size(result.Request.Width + margin.HorizontalThickness, result.Request.Height + margin.VerticalThickness);
@@ -790,29 +763,12 @@ namespace Xamarin.Forms
 #pragma warning restore 0618
 		}
 
-		protected override void OnParentSet()
-		{
-#pragma warning disable 0618 // retain until ParentView removed
-			base.OnParentSet();
-
-			if (ParentView != null)
-			{
-				NavigationProxy.Inner = ParentView.NavigationProxy;
-			}
-			else
-			{
-				NavigationProxy.Inner = null;
-			}
-#pragma warning restore 0618
-
-			PropertyPropagationController.PropagatePropertyChanged(null);
-		}
-
 		protected virtual void OnSizeAllocated(double width, double height)
 		{
 		}
 
 		[Obsolete("OnSizeRequest is obsolete as of version 2.2.0. Please use OnMeasure instead.")]
+		[EditorBrowsable(EditorBrowsableState.Never)]
 		protected virtual SizeRequest OnSizeRequest(double widthConstraint, double heightConstraint)
 		{
 			if (!IsPlatformEnabled)
@@ -962,9 +918,6 @@ namespace Xamarin.Forms
 
 		static void OnVisualChanged(BindableObject bindable, object oldValue, object newValue)
 		{
-			if(newValue != Xamarin.Forms.VisualMarker.Default)
-				VerifyVisualFlagEnabled();
-
 			var self = bindable as IVisualController;
 			var newVisual = (IVisual)newValue;
 
@@ -1056,17 +1009,7 @@ namespace Xamarin.Forms
 
 		void IPropertyPropagationController.PropagatePropertyChanged(string propertyName)
 		{
-			if (propertyName == null || propertyName == VisualElement.FlowDirectionProperty.PropertyName)
-				SetFlowDirectionFromParent(this);
-
-			if (propertyName == null || propertyName == VisualElement.VisualProperty.PropertyName)
-				SetVisualfromParent(this);
-
-			foreach (var element in LogicalChildren)
-			{
-				if (element is IPropertyPropagationController view)
-					view.PropagatePropertyChanged(propertyName);
-			}
+			PropertyPropagationExtensions.PropagatePropertyChanged(propertyName, this, LogicalChildren);
 		}
 
 		void SetSize(double width, double height)
@@ -1109,14 +1052,6 @@ namespace Xamarin.Forms
 				throw new InvalidOperationException(string.Format("Cannot convert \"{0}\" into {1}", value, typeof(bool)));
 
 			}
-		}
-
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public static void VerifyVisualFlagEnabled(
-			string constructorHint = null,
-			[CallerMemberName] string memberName = "")
-		{
-			ExperimentalFlags.VerifyFlagEnabled(nameof(Visual), ExperimentalFlags.VisualExperimental);
 		}
 	}
 }
