@@ -6,7 +6,7 @@ namespace Xamarin.Forms.Build.Tasks
 {
 	class ILRootNode : RootNode
 	{
-		public ILRootNode(XmlType xmlType, TypeReference typeReference, IXmlNamespaceResolver nsResolver, IXamlTypeParser typeParser) : 
+		public ILRootNode(XmlType xmlType, TypeReference typeReference, IXmlNamespaceResolver nsResolver, IXamlTypeInfo typeParser) : 
 			base(xmlType, nsResolver, typeParser)
 		{
 			TypeReference = typeReference;

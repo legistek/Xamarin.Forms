@@ -48,7 +48,7 @@ namespace Xamarin.Forms.Build.Tasks
 
 		public abstract bool Execute(out IList<Exception> thrownExceptions);
 
-		internal static ILRootNode ParseXaml(Stream stream, TypeReference typeReference, IXamlTypeParser typeParser)
+		internal static ILRootNode ParseXaml(Stream stream, TypeReference typeReference, IXamlTypeInfo typeParser)
 		{
 			ILRootNode rootnode = null;
 			using (var reader = XmlReader.Create(stream)) {

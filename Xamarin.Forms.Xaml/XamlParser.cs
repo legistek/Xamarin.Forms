@@ -102,7 +102,7 @@ namespace Xamarin.Forms.Xaml
 								node.Properties.Add(XmlName.xArguments, prop);
 						}
 						// 3. ElementTemplate-derived gets special handling
-						else if (node.IsSpecialType(typeof(ElementTemplate))) {
+						else if (node.IsType(typeof(ElementTemplate))) {
 							var prop = ReadNode(reader, (node as ElementNode)?.TypeParser, true);
 							if (prop != null) {							
 								if (node.Properties.ContainsKey(XmlName._CreateContent))
@@ -133,7 +133,7 @@ namespace Xamarin.Forms.Xaml
 			}
 		}
 
-		static INode ReadNode(XmlReader reader, IXamlTypeParser typeParser, bool nested = false)
+		static INode ReadNode(XmlReader reader, IXamlTypeInfo typeParser, bool nested = false)
 		{
 			var skipFirstRead = nested;
 			Debug.Assert(reader.NodeType == XmlNodeType.Element);

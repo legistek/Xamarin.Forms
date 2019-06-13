@@ -19,8 +19,8 @@ namespace Xamarin.Forms.Xaml.Internals
 				IRootObjectProvider = new XamlRootObjectProvider(context.RootElement);
 			if (context != null && node != null)
 			{
-				IXamlTypeResolver = new XamlTypeResolver(node.NamespaceResolver, context.TypeParser);
-				IXamlTypeParser = context.TypeParser;
+				IXamlTypeResolver = new XamlTypeResolver(node.NamespaceResolver, context.ManagedTypeResolver);
+				IXamlManagedTypeResolver = context.ManagedTypeResolver;
 				Add(typeof(IReferenceProvider), new ReferenceProvider(node));
 			}
 
@@ -41,10 +41,10 @@ namespace Xamarin.Forms.Xaml.Internals
 			set { services[typeof (IProvideValueTarget)] = value; }
 		}
 
-		internal IXamlTypeParser IXamlTypeParser
+		internal IXamlTypeInfo IXamlManagedTypeResolver
 		{
-			get { return (IXamlTypeParser)GetService(typeof(IXamlTypeParser)); }
-			set { services[typeof(IXamlTypeParser)] = value; }
+			get { return (IXamlTypeInfo)GetService(typeof(IXamlTypeInfo)); }
+			set { services[typeof(IXamlTypeInfo)] = value; }
 		}
 
 		internal IXamlTypeResolver IXamlTypeResolver
@@ -193,15 +193,15 @@ namespace Xamarin.Forms.Xaml.Internals
 
 	public class XamlTypeResolver : IXamlTypeResolver
 	{
-		readonly IXamlTypeParser typeParser;
+		readonly RuntimeManagedTypeResolver typeParser;
 		readonly IXmlNamespaceResolver namespaceResolver;
 
 		public XamlTypeResolver(IXmlNamespaceResolver namespaceResolver, Assembly assembly)
-			: this(namespaceResolver, new RuntimeXamlTypeParser(assembly))
+			: this(namespaceResolver, new RuntimeManagedTypeResolver(assembly))
 		{
 		}
 
-		internal XamlTypeResolver(IXmlNamespaceResolver namespaceResolver, IXamlTypeParser typeParser)
+		internal XamlTypeResolver(IXmlNamespaceResolver namespaceResolver, RuntimeManagedTypeResolver typeParser)
 		{
 			this.namespaceResolver = namespaceResolver ?? throw new ArgumentNullException();
 			this.typeParser = typeParser ?? throw new ArgumentNullException();
@@ -250,7 +250,7 @@ namespace Xamarin.Forms.Xaml.Internals
 				return null;
 			}
 
-			return typeParser.GetManagedType<Type>(new XmlType(namespaceuri, name, null), xmlLineInfo, out exception);
+			return typeParser.GetManagedType(new XmlType(namespaceuri, name, null), xmlLineInfo, out exception);
 		}
 	}
 

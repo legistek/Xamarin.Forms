@@ -27,7 +27,9 @@ namespace Xamarin.Forms.Build.Tasks
 			var typename = member.Substring(0, dotIdx);
 			var membername = member.Substring(dotIdx + 1);
 
-			var typeRef = module.ImportReference(XmlTypeExtensions.GetTypeReference(typename, node as BaseNode, context));
+			var typeRef = context.TypeResolver.GetManagedType(typename, node as BaseNode, out XamlParseException xpe);
+			if (xpe != null)
+				throw xpe;
 			var fieldRef = GetFieldReference(typeRef, membername, module);
 			var propertyDef = GetPropertyDefinition(typeRef, membername, module);
 

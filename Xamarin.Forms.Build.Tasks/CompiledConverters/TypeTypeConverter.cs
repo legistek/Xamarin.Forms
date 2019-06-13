@@ -31,7 +31,7 @@ namespace Xamarin.Forms.Core.XamlC
 			else
 				xmlType = new XmlType(node.NamespaceResolver.LookupNamespace(""), split[0], null);
 
-			var typeRef = context.TypeParser.GetManagedType<TypeReference>(xmlType, node, out _);
+			var typeRef = context.TypeResolver.GetManagedType(xmlType, node, out _);
 			if (typeRef == null)
 				goto error;
 

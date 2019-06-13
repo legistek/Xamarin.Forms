@@ -33,22 +33,22 @@ namespace Xamarin.Forms.Core.XamlC
 			var parts = value.Split('.');
 			if (parts.Length == 1) {
 				var parent = node.Parent?.Parent as IElementNode ?? (node.Parent?.Parent as IListNode)?.Parent as IElementNode;
-				if ((node.Parent as ElementNode)?.IsSpecialType(typeof(Setter)) == true ||
-					(node.Parent as ElementNode)?.IsSpecialType(typeof(PropertyCondition)) == true) {
-					if (parent.IsSpecialType(typeof(Trigger)) ||
-						parent.IsSpecialType(typeof(DataTrigger)) ||
-						parent.IsSpecialType(typeof(MultiTrigger)) ||
-						parent.IsSpecialType(typeof(Style)))
+				if (node.Parent.IsType(typeof(Setter)) ||
+					node.Parent.IsType(typeof(PropertyCondition))) {
+					if (parent.IsType(typeof(Trigger)) ||
+						parent.IsType(typeof(DataTrigger)) ||
+						parent.IsType(typeof(MultiTrigger)) ||
+						parent.IsType(typeof(Style)))
 					{
 						var ttnode = (parent as ElementNode).Properties [new XmlName("", "TargetType")];
 						if (ttnode is ValueNode)
 							typeName = (ttnode as ValueNode).Value as string;
 						else if (ttnode is IElementNode)
 							typeName = ((ttnode as IElementNode).CollectionItems.FirstOrDefault() as ValueNode)?.Value as string ?? ((ttnode as IElementNode).Properties [new XmlName("", "TypeName")] as ValueNode)?.Value as string;
-					} else if (parent.IsSpecialType(typeof(VisualState))) {
+					} else if (parent.IsType(typeof(VisualState))) {
 						typeName = FindTypeNameForVisualState(parent, node);
 					}
-				} else if ((node.Parent as ElementNode)?.IsSpecialType(typeof(Trigger)) == true)
+				} else if (node.Parent.IsType(typeof(Trigger)))
 					typeName = ((node.Parent as ElementNode).Properties [new XmlName("", "TargetType")] as ValueNode).Value as string;
 				propertyName = parts [0];
 			} else if (parts.Length == 2) {
@@ -60,7 +60,7 @@ namespace Xamarin.Forms.Core.XamlC
 			if (typeName == null || propertyName == null)
 				throw new XamlParseException($"Cannot convert \"{value}\" into {typeof(BindableProperty)}", node);
 
-			var typeRef = XmlTypeExtensions.GetTypeReference(typeName, node, context);
+			var typeRef = context.TypeResolver.GetManagedType(typeName, node, out _);
 			if (typeRef == null)
 				throw new XamlParseException($"Can't resolve {typeName}", node);
 			bpRef = GetBindablePropertyFieldReference(typeRef, propertyName, module);
@@ -75,18 +75,18 @@ namespace Xamarin.Forms.Core.XamlC
 
 			//2. check that the VS is in a VSG
 			if (!(parent.Parent is IElementNode target) || 
-				!target.IsSpecialType(typeof(VisualStateGroup)))
+				!target.IsType(typeof(VisualStateGroup)))
 				throw new XamlParseException($"Expected {nameof(VisualStateGroup)} but found {parent.Parent}", lineInfo);
 
 			//3. if the VSG is in a VSGL, skip that as it could be implicit
 			if (   target.Parent is ListNode
-				|| (target.Parent as IElementNode)?.IsSpecialType(typeof(VisualStateGroupList)) == true)
+				|| target.Parent.IsType(typeof(VisualStateGroupList)))
 				target = target.Parent.Parent as IElementNode;
 			else
 				target = target.Parent as IElementNode;
 
 			//4. target is now a Setter in a Style, or a VE
-			if (target.IsSpecialType(typeof(Setter)))
+			if (target.IsType(typeof(Setter)))
 				return ((target?.Parent as IElementNode)?.Properties[new XmlName("", "TargetType")] as ValueNode)?.Value as string;
 			else
 				return target.XmlType.Name;

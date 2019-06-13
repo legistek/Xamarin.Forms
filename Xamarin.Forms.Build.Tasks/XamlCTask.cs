@@ -168,7 +168,7 @@ namespace Xamarin.Forms.Build.Tasks
 						}
 
 						LoggingHelper.LogMessage(Low, $"{new string(' ', 6)}Parsing Xaml");
-						var rootnode = ParseXaml(resource.GetResourceStream(), typeDef, new XamlCTypeParser(module));
+						var rootnode = ParseXaml(resource.GetResourceStream(), typeDef, new XamlCManagedTypeResolver(module));
 						if (rootnode == null) {
 							LoggingHelper.LogMessage(Low, $"{new string(' ', 8)}failed.");
 							continue;
@@ -315,7 +315,7 @@ namespace Xamarin.Forms.Build.Tasks
 					il.Append(nop);
 				}
 
-				var visitorContext = new ILContext(il, body, module, rootnode.TypeParser);
+				var visitorContext = new ILContext(il, body, module, rootnode.TypeParser as XamlCManagedTypeResolver);
 
 				rootnode.Accept(new XamlNodeVisitor((node, parent) => node.Parent = parent), null);
 				rootnode.Accept(new ExpandMarkupsVisitor(visitorContext), null);

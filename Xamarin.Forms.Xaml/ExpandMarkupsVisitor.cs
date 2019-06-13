@@ -164,7 +164,7 @@ namespace Xamarin.Forms.Xaml
 				if (type == null)
 					throw new NotSupportedException();
 
-				var typeParser = serviceProvider.GetService(typeof(IXamlTypeParser)) as IXamlTypeParser;
+				var typeParser = serviceProvider.GetService(typeof(IXamlTypeInfo)) as IXamlTypeInfo;
 
 				node = xmlLineInfo == null
 					? new ElementNode(xmltype, null, nsResolver, typeParser)

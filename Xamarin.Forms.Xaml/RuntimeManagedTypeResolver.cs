@@ -2,41 +2,39 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 using System.Xml;
-
 using Xamarin.Forms.Internals;
 
 namespace Xamarin.Forms.Xaml
 {
 	// Used for runtime XmlType resolution to CLR Type
-	class RuntimeXamlTypeParser : IXamlTypeParser
+	class RuntimeManagedTypeResolver : IXamlTypeInfo
 	{
 		Dictionary<XmlType, Type> _typeCache = new Dictionary<XmlType, Type>();
 		Assembly _currentAssembly;
 		static IList<XmlnsDefinitionAttribute> s_xmlnsDefinitions;
 
-		public RuntimeXamlTypeParser(Assembly currentAssembly = null)
+		public RuntimeManagedTypeResolver(Assembly currentAssembly = null)
 		{
+			// this is ideally the assembly with the XAML being parsed
 			_currentAssembly = currentAssembly;
 		}
 
 		public bool HasAttribute(XmlType xmlType, Type attrType)
 		{
-			Type managedType = GetManagedType<Type>(xmlType, null, out _);
+			Type managedType = GetManagedType(xmlType, null, out _);
 			return managedType?.GetTypeInfo()?.GetCustomAttribute(attrType) != null;
 		}
 
-		public bool DerivesFrom (XmlType xmlType, Type t)
+		public bool IsType (XmlType xmlType, Type t)
 		{
-			Type managedType = GetManagedType<Type>(xmlType, null, out _);
+			Type managedType = GetManagedType(xmlType, null, out _);
 			if ( managedType != null )
 				return t.IsAssignableFrom(managedType);
 			return false;
 		}
 
-		public T GetManagedType<T>(XmlType xmlType, IXmlLineInfo lineInfo, out XamlParseException exception)
-			where T: class
+		public Type GetManagedType(XmlType xmlType, IXmlLineInfo lineInfo, out XamlParseException exception)
 		{
 			exception = null;
 			if (!_typeCache.TryGetValue(xmlType, out Type type))
@@ -45,7 +43,7 @@ namespace Xamarin.Forms.Xaml
 				if (type != null)
 					_typeCache[xmlType] = type;
 			}
-			return type as T;
+			return type;
 		}
 
 		static void GatherXmlnsDefinitionAttributes()

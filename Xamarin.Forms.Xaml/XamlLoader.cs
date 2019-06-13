@@ -87,7 +87,7 @@ namespace Xamarin.Forms.Xaml
 						continue;
 					}
 
-					var typeParser = new RuntimeXamlTypeParser(view.GetType().GetTypeInfo().Assembly);
+					var typeParser = new RuntimeManagedTypeResolver(view.GetType().GetTypeInfo().Assembly);
 
 					var rootnode = new RuntimeRootNode(new XmlType(reader.NamespaceURI, reader.Name, null), view, (IXmlNamespaceResolver)reader, typeParser);
 					XamlParser.ParseXaml(rootnode, reader);
@@ -127,7 +127,7 @@ namespace Xamarin.Forms.Xaml
 					}
 
 					var typeArguments = XamlParser.GetTypeArguments(reader);
-					var typeParser = new RuntimeXamlTypeParser();
+					var typeParser = new RuntimeManagedTypeResolver();
 					var rootnode = new RuntimeRootNode(
 						new XmlType(reader.NamespaceURI, reader.Name, typeArguments), 
 						null, 
@@ -166,7 +166,7 @@ namespace Xamarin.Forms.Xaml
 						continue;
 					}
 
-					var typeParser = new RuntimeXamlTypeParser(rootView.GetType().GetTypeInfo().Assembly);
+					var typeParser = new RuntimeManagedTypeResolver(rootView.GetType().GetTypeInfo().Assembly);
 
 					//the root is set to null, and not to rootView, on purpose as we don't want to erase the current Resources of the view
 					RootNode rootNode = new RuntimeRootNode(
@@ -380,7 +380,7 @@ namespace Xamarin.Forms.Xaml
 
 		public class RuntimeRootNode : RootNode
 		{
-			public RuntimeRootNode(XmlType xmlType, object root, IXmlNamespaceResolver resolver, IXamlTypeParser typeParser) : 
+			public RuntimeRootNode(XmlType xmlType, object root, IXmlNamespaceResolver resolver, IXamlTypeInfo typeParser) : 
 				base(xmlType, resolver, typeParser)
 			{
 				Root = root;

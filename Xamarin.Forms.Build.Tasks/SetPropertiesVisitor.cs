@@ -392,7 +392,7 @@ namespace Xamarin.Forms.Build.Tasks
 
 			var dtXType = new XmlType(namespaceuri, dataType, null);
 
-			var tSourceRef = context.TypeParser.GetManagedType<TypeReference>(dtXType, node, out _);
+			var tSourceRef = context.TypeResolver.GetManagedType(dtXType, node, out _);
 			if (tSourceRef == null)
 				yield break; //throw
 
@@ -1396,7 +1396,7 @@ namespace Xamarin.Forms.Build.Tasks
 			{
 				var typename = localname.Substring(0, dotIdx);
 				localname = localname.Substring(dotIdx + 1);
-				elementType = context.TypeParser.GetManagedType<TypeReference>(
+				elementType = context.TypeResolver.GetManagedType(
 					new XmlType(namespaceURI, typename, null), lineInfo, out _);
 				return true;
 			}
@@ -1455,7 +1455,7 @@ namespace Xamarin.Forms.Build.Tasks
 			//Fill the loadTemplate Body
 			var templateIl = loadTemplate.Body.GetILProcessor();
 			templateIl.Emit(OpCodes.Nop);
-			var templateContext = new ILContext(templateIl, loadTemplate.Body, module, parentContext.TypeParser, parentValues)
+			var templateContext = new ILContext(templateIl, loadTemplate.Body, module, parentContext.TypeResolver, parentValues)
 			{
 				Root = root
 			};

@@ -8,13 +8,13 @@ using Xamarin.Forms.Xaml;
 
 namespace Xamarin.Forms.Build.Tasks
 {
-	class XamlGTypeParser : IDisposable
+	class XamlGManagedTypeResolver : IDisposable
 	{
 		List<XmlnsDefinitionAttribute> _xmlnsDefinitions;
 		Dictionary<string, ModuleDefinition> _xmlnsModules;
 		string[] _references;
 
-		public XamlGTypeParser(string references)
+		public XamlGManagedTypeResolver(string references)
 		{
 			_references = references?.Split(';')?.Distinct()?.ToArray() ?? new string[0];
 		}
@@ -77,7 +77,7 @@ namespace Xamarin.Forms.Build.Tasks
 					{
 						if (ca.AttributeType.FullName == typeof(XmlnsDefinitionAttribute).FullName)
 						{
-							_xmlnsDefinitions.Add(XamlCTypeParser.GetXmlnsDefinition(ca, asmDef));
+							_xmlnsDefinitions.Add(XamlCManagedTypeResolver.GetXmlnsDefinition(ca, asmDef));
 							_xmlnsModules[asmDef.FullName] = asmDef.MainModule;
 						}
 					}

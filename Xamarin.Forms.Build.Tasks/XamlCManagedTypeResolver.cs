@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 using Mono.Cecil;
 using Mono.Cecil.Rocks;
@@ -10,8 +8,8 @@ using Xamarin.Forms.Xaml;
 
 namespace Xamarin.Forms.Build.Tasks
 {
-	// Used for XamlC type parsing to TypeReference
-	class XamlCTypeParser : IXamlTypeParser
+	// Used by XamlC for XmlType to TypeReference
+	class XamlCManagedTypeResolver : IXamlTypeInfo
 	{
 		static Dictionary<ModuleDefinition, IList<XmlnsDefinitionAttribute>> s_xmlnsDefinitions =
 			new Dictionary<ModuleDefinition, IList<XmlnsDefinitionAttribute>>();
@@ -20,22 +18,25 @@ namespace Xamarin.Forms.Build.Tasks
 		Dictionary<Type, TypeReference> _specialTypes = new Dictionary<Type, TypeReference>();
 		ModuleDefinition _currentModule;
 
-		public XamlCTypeParser(ModuleDefinition module)
+		public XamlCManagedTypeResolver(ModuleDefinition module)
 		{
+			// this has to be the module being compiled and can't be null
+			if (module == null)
+				throw new ArgumentNullException(nameof(module));
 			_currentModule = module;
 		}
 
 		public bool HasAttribute(XmlType xmlType, Type attrType)
 		{
-			TypeReference managedType = GetManagedType<TypeReference>(xmlType, null, out _);
+			TypeReference managedType = GetManagedType(xmlType, null, out _);
 			return managedType?.GetCustomAttribute(
 				_currentModule,
 				(attrType.Assembly.GetName().Name, attrType.Namespace, attrType.Name)) != null;
 		}
 
-		public bool DerivesFrom(XmlType xmlType, Type t)
+		public bool IsType(XmlType xmlType, Type t)
 		{
-			TypeReference managedType = GetManagedType<TypeReference>(xmlType, null, out _);
+			TypeReference managedType = GetManagedType(xmlType, null, out _);
 			if (managedType != null)
 			{
 				if ( !_specialTypes.TryGetValue(t, out TypeReference specialType))
@@ -48,7 +49,28 @@ namespace Xamarin.Forms.Build.Tasks
 			return false;
 		}
 
-		public T GetManagedType<T>(XmlType xmlType, IXmlLineInfo lineInfo, out XamlParseException exception) where T : class
+		public TypeReference GetManagedType(string xmlType, BaseNode node, out XamlParseException exception)
+		{
+			var split = xmlType.Split(':');
+			if (split.Length > 2)
+				throw new XamlParseException($"Type \"{xmlType}\" is invalid", node as IXmlLineInfo);
+
+			string prefix, name;
+			if (split.Length == 2)
+			{
+				prefix = split[0];
+				name = split[1];
+			}
+			else
+			{
+				prefix = "";
+				name = split[0];
+			}
+			var namespaceuri = node.NamespaceResolver.LookupNamespace(prefix) ?? "";
+			return this.GetManagedType(new XmlType(namespaceuri, name, null), node as IXmlLineInfo, out exception);
+		}
+
+		public TypeReference GetManagedType(XmlType xmlType, IXmlLineInfo lineInfo, out XamlParseException exception)
 		{
 			exception = null;
 			if (!_typeCache.TryGetValue(xmlType, out TypeReference type))
@@ -64,7 +86,7 @@ namespace Xamarin.Forms.Build.Tasks
 					exception = xpe;
 				}				
 			}
-			return type as T;
+			return type;
 		}
 
 		private TypeReference GetTypeReference(XmlType xmlType, IXmlLineInfo xmlInfo)

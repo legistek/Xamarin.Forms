@@ -10,7 +10,7 @@ namespace Xamarin.Forms.Build.Tasks
 {
 	class ILContext
 	{
-		public ILContext(ILProcessor il, MethodBody body, ModuleDefinition module, IXamlTypeParser typeParser, FieldDefinition parentContextValues = null)
+		public ILContext(ILProcessor il, MethodBody body, ModuleDefinition module, XamlCManagedTypeResolver typeResolver, FieldDefinition parentContextValues = null)
 		{
 			IL = il;
 			Body = body;
@@ -20,7 +20,7 @@ namespace Xamarin.Forms.Build.Tasks
 			TypeExtensions = new Dictionary<INode, TypeReference>();
 			ParentContextValues = parentContextValues;
 			Module = module;
-			TypeParser = typeParser;
+			TypeResolver = typeResolver;
 		}
 
 		public Dictionary<IValueNode, object> Values { get; private set; }
@@ -41,6 +41,6 @@ namespace Xamarin.Forms.Build.Tasks
 
 		public ModuleDefinition Module { get; private set; }
 
-		public IXamlTypeParser TypeParser { get; private set; }
+		public XamlCManagedTypeResolver TypeResolver { get; private set; }
 	}
 }

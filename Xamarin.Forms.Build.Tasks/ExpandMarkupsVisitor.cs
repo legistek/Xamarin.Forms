@@ -164,7 +164,7 @@ namespace Xamarin.Forms.Build.Tasks
 					throw new XamlParseException($"Undeclared xmlns prefix '{prefix}'", xmlLineInfo);
 				//The order of lookup is to look for the Extension-suffixed class name first and then look for the class name without the Extension suffix.
 				XmlType type = new XmlType(namespaceuri, name + "Extension", null);
-					contextProvider.Context.TypeParser.GetManagedType<TypeReference>(type, null, out XamlParseException xpe);					
+					contextProvider.Context.TypeResolver.GetManagedType(type, null, out XamlParseException xpe);					
 				if ( xpe != null )
 				{
 					type = new XmlType(namespaceuri, name, null);
@@ -174,8 +174,8 @@ namespace Xamarin.Forms.Build.Tasks
 					throw new NotSupportedException();
 
 				node = xmlLineInfo == null
-					? new ElementNode(type, "", nsResolver, contextProvider.Context.TypeParser)
-					: new ElementNode(type, "", nsResolver, contextProvider.Context.TypeParser, xmlLineInfo.LineNumber, xmlLineInfo.LinePosition);
+					? new ElementNode(type, "", nsResolver, contextProvider.Context.TypeResolver)
+					: new ElementNode(type, "", nsResolver, contextProvider.Context.TypeResolver, xmlLineInfo.LineNumber, xmlLineInfo.LinePosition);
 
 				if (remaining.StartsWith("}", StringComparison.Ordinal))
 				{

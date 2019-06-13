@@ -17,11 +17,10 @@ namespace Xamarin.Forms.Xaml
 		INode Clone();
 	}
 
-	interface IXamlTypeParser
+	interface IXamlTypeInfo
 	{
-		T GetManagedType<T>(XmlType xmlType, IXmlLineInfo lineInfo, out XamlParseException exception)
-			where T : class;
-		bool DerivesFrom(XmlType xmlType, Type t);
+		bool IsType(XmlType xmlType, Type t);
+
 		bool HasAttribute(XmlType xmlType, Type attrType);
 	}
 
@@ -36,8 +35,6 @@ namespace Xamarin.Forms.Xaml
 		INameScope Namescope { get; }
 		XmlType XmlType { get; }
 		string NamespaceURI { get; }
-		bool IsSpecialType(Type t);
-		T GetManagedType<T>(out XamlParseException xpe) where T : class;
 	}
 
 	interface IListNode : INode
@@ -58,6 +55,28 @@ namespace Xamarin.Forms.Xaml
 		public string NamespaceUri { get; }
 		public string Name { get; }
 		public IList<XmlType> TypeArguments { get; }
+
+		public override int GetHashCode()
+		{
+			return (NamespaceUri, Name).GetHashCode();
+		}
+
+		public override bool Equals(object obj)
+		{
+			if (!(obj is XmlType t))
+				return false;
+			if (this.TypeArguments != null)
+			{
+				if (this.TypeArguments?.Count != t.TypeArguments?.Count)
+					return false;
+				for (int i = 0; i < this.TypeArguments.Count; i++)
+					if (!this.TypeArguments[i].Equals(t.TypeArguments[i]))
+						return false;
+			}
+
+			return string.Equals(NamespaceUri, t.NamespaceUri) &&
+				string.Equals(Name, t.Name);
+		}
 	}
 
 	abstract class BaseNode : IXmlLineInfo, INode
@@ -127,7 +146,7 @@ namespace Xamarin.Forms.Xaml
 	class ElementNode : BaseNode, IValueNode, IElementNode
 	{
 		public ElementNode(XmlType type, string namespaceURI, IXmlNamespaceResolver namespaceResolver, 
-			IXamlTypeParser typeParser,
+			IXamlTypeInfo typeParser,
 			int linenumber = -1,
 			int lineposition = -1)
 			: base(namespaceResolver, linenumber, lineposition)
@@ -147,18 +166,7 @@ namespace Xamarin.Forms.Xaml
 		public string NamespaceURI { get; }
 		public INameScope Namescope { get; set; }
 
-		internal IXamlTypeParser TypeParser { get; }
-
-		public bool IsSpecialType(Type t)
-		{
-			return this.TypeParser?.DerivesFrom(this.XmlType, t) == true;
-		}
-
-		public T GetManagedType<T>(out XamlParseException xpe) where T : class
-		{
-			xpe = null;
-			return this.TypeParser?.GetManagedType<T>(this.XmlType, this, out xpe);
-		}
+		internal IXamlTypeInfo TypeParser { get; }
 
 		public override void Accept(IXamlNodeVisitor visitor, INode parentNode)
 		{
@@ -213,7 +221,7 @@ namespace Xamarin.Forms.Xaml
 
 	abstract class RootNode : ElementNode
 	{
-		protected RootNode(XmlType xmlType, IXmlNamespaceResolver nsResolver, IXamlTypeParser typeParser) 
+		protected RootNode(XmlType xmlType, IXmlNamespaceResolver nsResolver, IXamlTypeInfo typeParser) 
 			: base(xmlType, xmlType.NamespaceUri, nsResolver, typeParser)
 		{
 		}
@@ -277,6 +285,23 @@ namespace Xamarin.Forms.Xaml
 				node = node.Parent;
 			} while (node != null);
 			return false;
+		}
+
+		public static bool IsType(this INode node, Type t)
+		{
+			if (!(node is ElementNode en))
+				return false;
+			return en.TypeParser?.IsType(en.XmlType, t) == true;
+		}
+
+		// TODO - This can be used later to change any logic that depends on
+		// specific X.F.C data types and instead to use type attributes
+		// to determine the behavior.
+		public static bool HasAttribute(this INode node, Type attrType)
+		{
+			if (!(node is ElementNode en))
+				return false;
+			return en.TypeParser?.HasAttribute(en.XmlType, attrType) == true;
 		}
 	}
 }

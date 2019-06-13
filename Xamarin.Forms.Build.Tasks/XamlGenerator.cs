@@ -59,7 +59,7 @@ namespace Xamarin.Forms.Build.Tasks
 		internal IEnumerable<CodeMemberField> NamedFields { get; set; }
 		internal CodeTypeReference BaseType { get; set; }
 
-		private XamlGTypeParser _TypeParser;
+		private XamlGManagedTypeResolver _typeResolver;
 
 		public XamlGenerator(
 			string xamlFile,
@@ -91,7 +91,7 @@ namespace Xamarin.Forms.Build.Tasks
 			Logger?.LogMessage(MessageImportance.Low, " AssemblyName: {0}", AssemblyName);
 			Logger?.LogMessage(MessageImportance.Low, " OutputFile {0}", OutputFile);
 			
-			using (_TypeParser = new XamlGTypeParser(this.References))
+			using (_typeResolver = new XamlGManagedTypeResolver(this.References))
 			{
 				using (StreamReader reader = File.OpenText(XamlFile))
 					if (!ParseXaml(reader))
@@ -156,7 +156,7 @@ namespace Xamarin.Forms.Build.Tasks
 			NamedFields = GetCodeMemberFields(root, nsmgr);
 			var typeArguments = GetAttributeValue(root, "TypeArguments", XamlParser.X2006Uri, XamlParser.X2009Uri);
 			var xmlType = new XmlType(root.NamespaceURI, root.LocalName, typeArguments != null ? TypeArgumentsParser.ParseExpression(typeArguments, nsmgr, null) : null);
-			BaseType = _TypeParser.GetType(xmlType);
+			BaseType = _typeResolver.GetType(xmlType);
 
 			return true;
 		}
@@ -297,7 +297,7 @@ namespace Xamarin.Forms.Build.Tasks
 
 				yield return new CodeMemberField {
 					Name = name,
-					Type = _TypeParser.GetType(xmlType),
+					Type = _typeResolver.GetType(xmlType),
 					Attributes = access,
 					CustomAttributes = { GeneratedCodeAttrDecl }
 				};
