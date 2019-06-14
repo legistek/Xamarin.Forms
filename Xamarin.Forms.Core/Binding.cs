@@ -87,6 +87,10 @@ namespace Xamarin.Forms
 			}
 		}
 
+		public static readonly object DoNothing = new object();
+
+		public static readonly object UnsetValue = new object();
+
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public string UpdateSourceEventName {
 			get { return _updateSourceEventName; }

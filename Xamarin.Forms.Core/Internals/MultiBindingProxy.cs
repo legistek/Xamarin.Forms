@@ -1,9 +1,7 @@
 ﻿namespace Xamarin.Forms.Internals
 {
 	internal class MultiBindingProxy : BindableObject
-	{
-		bool _suspendValueChangeNotification;
-
+	{		
 		public static readonly BindableProperty ValueProperty = BindableProperty.Create(
 			"Value",
 			typeof(object),
@@ -19,11 +17,17 @@
 			this.MultiBinding = multiBinding;
 		}
 
+		internal bool SuspendValueChangeNotification { get; set; }
+
 		public object Value
 		{
 			get
 			{
 				return GetValue(ValueProperty);
+			}
+			set
+			{
+				SetValue(ValueProperty, value);
 			}
 		}
 		
@@ -31,20 +35,21 @@
 
 		internal void SetValueSilent(object value)
 		{
-			this._suspendValueChangeNotification = true;
+			bool suspended = this.SuspendValueChangeNotification;
+			this.SuspendValueChangeNotification = true;
 			try
 			{
 				SetValue(ValueProperty, value);
 			}
 			finally
 			{
-				_suspendValueChangeNotification = false;
+				SuspendValueChangeNotification = suspended;
 			}
 		}
 
 		void OnValueChanged(object oldValue, object newValue)
 		{
-			if (!_suspendValueChangeNotification)
+			if (!SuspendValueChangeNotification)
 				this.MultiBinding.ApplyBindingProxyValues(this);
 		}
 	}

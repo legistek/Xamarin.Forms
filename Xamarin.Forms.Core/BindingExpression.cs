@@ -152,11 +152,14 @@ namespace Xamarin.Forms
 					return;
 				}
 
-				target.SetValueCore(property, value, SetValueFlags.ClearDynamicResource, BindableObject.SetValuePrivateFlags.Default | BindableObject.SetValuePrivateFlags.Converted);
+				if (value != Forms.Binding.DoNothing)
+					target.SetValueCore(property, value, SetValueFlags.ClearDynamicResource, BindableObject.SetValuePrivateFlags.Default | BindableObject.SetValuePrivateFlags.Converted);
 			}
 			else if (needsSetter && part.LastSetter != null && current != null)
 			{
 				object value = Binding.GetTargetValue(target.GetValue(property), part.SetterType);
+				if (value == Forms.Binding.DoNothing)
+					return;
 
 				if (!TryConvert(ref value, property, part.SetterType, false))
 				{
