@@ -570,7 +570,8 @@ namespace Xamarin.Forms.CustomAttributes
 			Clicked,
 			Command,
 			Image,
-			Pressed
+			Pressed,
+			Padding
 		}
 
 		public enum ImageSource
@@ -715,7 +716,8 @@ namespace Xamarin.Forms.CustomAttributes
 		public enum Switch
 		{
 			IsToggled,
-			OnColor
+			OnColor,
+			ThumbColor
 		}
 
 		public enum CheckBox
