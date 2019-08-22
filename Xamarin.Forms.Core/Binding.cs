@@ -110,7 +110,7 @@ namespace Xamarin.Forms
 
 			return new Binding(GetBindingPath(propertyGetter), mode, converter, converterParameter, stringFormat);
 		}
-
+				
 		internal override void Apply(bool fromTarget)
 		{
 			base.Apply(fromTarget);
@@ -150,22 +150,24 @@ namespace Xamarin.Forms
 			if (!(Source is RelativeBindingSource relativeSource))
 				return;
 
+			var relativeSourceTarget = this.RelativeSourceTargetOverride ?? targetObject as Element;
+
 			object resolvedSource = null;			
 
 			switch (relativeSource.Mode)
 			{
 				case RelativeBindingSourceMode.Self:
-					resolvedSource = targetObject;
+					resolvedSource = relativeSourceTarget;
 					break;
 
 				case RelativeBindingSourceMode.TemplatedParent:
-					_expression.SubscribeToTemplatedParentChanges(elem, targetProperty);
-					resolvedSource = elem.TemplatedParent;
+					_expression.SubscribeToTemplatedParentChanges(relativeSourceTarget, targetProperty);
+					resolvedSource = relativeSourceTarget.TemplatedParent;
 					break;
 
 				case RelativeBindingSourceMode.FindAncestor:
 				case RelativeBindingSourceMode.FindAncestorBindingContext:
-					ApplyAncestorTypeBinding(elem, targetProperty);
+					ApplyAncestorTypeBinding(elem, relativeSourceTarget, targetProperty);
 					return;
 
 				default:
@@ -176,14 +178,15 @@ namespace Xamarin.Forms
 		}		
 
 		void ApplyAncestorTypeBinding(
-			Element target,
+			Element actualTarget,
+			Element relativeSourceTarget,
 			BindableProperty targetProperty,
 			Element currentElement = null,
 			int currentLevel = 1,
 			List<Element> chain = null)
 		{			
-			currentElement = currentElement ?? target;
-			chain = chain ?? new List<Element> { target };
+			currentElement = currentElement ?? relativeSourceTarget;
+			chain = chain ?? new List<Element> { relativeSourceTarget };
 
 			if (currentElement.RealParent is Application)
 				return;
@@ -200,13 +203,14 @@ namespace Xamarin.Forms
 						resolvedSource = currentElement.RealParent;
 					else
 						resolvedSource = currentElement.RealParent?.BindingContext;
-					_expression.Apply(resolvedSource, target, targetProperty);
+					_expression.Apply(resolvedSource, actualTarget, targetProperty);
 					_expression.SubscribeToAncestryChanges(chain);
 				}
 				else
 				{
 					ApplyAncestorTypeBinding(
-						target, 
+						actualTarget, 
+						relativeSourceTarget,
 						targetProperty, 
 						currentElement.RealParent, 
 						++currentLevel,
@@ -220,7 +224,8 @@ namespace Xamarin.Forms
 				{
 					currentElement.ParentSet -= onElementParentSet;
 					ApplyAncestorTypeBinding(
-						target, 
+						actualTarget, 
+						relativeSourceTarget,
 						targetProperty, 
 						currentElement, 
 						currentLevel,

@@ -18,7 +18,7 @@
 		}
 
 		internal bool SuspendValueChangeNotification { get; set; }
-
+		
 		public object Value
 		{
 			get

@@ -99,9 +99,7 @@ namespace Xamarin.Forms
 					ApplyBindingProxyValues(null, true);
 				return;
 			}
-
-			
-
+		
 			_targetProperty = targetProperty;
 
 			CreateBindingProxies(bindObj, context);
@@ -199,7 +197,7 @@ namespace Xamarin.Forms
 
 			foreach (var binding in _bindings)
 			{
-				MultiBindingProxy proxy = new MultiBindingProxy(this);
+				var proxy = new MultiBindingProxy(this);
 				proxy.BindingContext = context;
 
 				// Bind each proxy's BindingContext to that of the 
@@ -210,6 +208,10 @@ namespace Xamarin.Forms
 
 				// Bind proxy's Value property using the child binding settings
 				var proxyBinding = binding.Clone();
+
+				// Ensures that RelativeSource bindings resolve using the
+				// MultiBinding's BindableObject target rather than the proxy.
+				proxyBinding.RelativeSourceTargetOverride = target as Element;
 
 				// OneWayToSource, OneTime, or OneWay mode on the MultiBinding effectively
 				// override the childrens' modes 
