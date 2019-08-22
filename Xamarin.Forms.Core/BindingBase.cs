@@ -69,6 +69,8 @@ namespace Xamarin.Forms
 
 		internal bool IsApplied { get; private set; }
 
+		internal Element RelativeSourceTargetOverride { get; set; }
+
 		public static void DisableCollectionSynchronization(IEnumerable collection)
 		{
 			if (collection == null)

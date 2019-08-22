@@ -83,7 +83,7 @@ namespace Xamarin.Forms
 				ThrowIfApplied();
 				_source = value;
 				if ((value as RelativeBindingSource)?.Mode == RelativeBindingSourceMode.TemplatedParent)
-					AllowChaining = true;
+					this.AllowChaining = true;
 			}
 		}
 
@@ -110,7 +110,7 @@ namespace Xamarin.Forms
 
 			return new Binding(GetBindingPath(propertyGetter), mode, converter, converterParameter, stringFormat);
 		}
-
+				
 		internal override void Apply(bool fromTarget)
 		{
 			base.Apply(fromTarget);
@@ -131,7 +131,7 @@ namespace Xamarin.Forms
 			if (src != null && isApplied && fromBindingContextChanged)
 				return;
 
-			if (Source is RelativeBindingSource) {
+			if (Source is RelativeBindingSource) { 
 				ApplyRelativeSourceBinding(bindObj, targetProperty);
 			} else {
 				object bindingContext = src ?? Context ?? context;
@@ -141,31 +141,33 @@ namespace Xamarin.Forms
 			}
 		}
 
-#pragma warning disable RECS0165 // Asynchronous methods should return a Task instead of void
-		async void ApplyRelativeSourceBinding(
+		void ApplyRelativeSourceBinding(
 			BindableObject targetObject, 
 			BindableProperty targetProperty)
-#pragma warning restore RECS0165 // Asynchronous methods should return a Task instead of void
 		{
 			if (!(targetObject is Element elem))
 				throw new InvalidOperationException();
 			if (!(Source is RelativeBindingSource relativeSource))
 				return;
 
-			object resolvedSource;
+			var relativeSourceTarget = this.RelativeSourceTargetOverride ?? targetObject as Element;
+
+			object resolvedSource = null;			
+
 			switch (relativeSource.Mode)
 			{
 				case RelativeBindingSourceMode.Self:
-					resolvedSource = targetObject;
+					resolvedSource = relativeSourceTarget;
 					break;
 
 				case RelativeBindingSourceMode.TemplatedParent:
-					resolvedSource = await TemplateUtilities.FindTemplatedParentAsync(elem);
+					_expression.SubscribeToTemplatedParentChanges(relativeSourceTarget, targetProperty);
+					resolvedSource = relativeSourceTarget.TemplatedParent;
 					break;
 
 				case RelativeBindingSourceMode.FindAncestor:
 				case RelativeBindingSourceMode.FindAncestorBindingContext:
-					ApplyAncestorTypeBinding(elem, targetProperty);
+					ApplyAncestorTypeBinding(elem, relativeSourceTarget, targetProperty);
 					return;
 
 				default:
@@ -173,58 +175,46 @@ namespace Xamarin.Forms
 			}
 
 			_expression.Apply(resolvedSource, targetObject, targetProperty);						
-		}
+		}		
 
 		void ApplyAncestorTypeBinding(
-			Element target,
+			Element actualTarget,
+			Element relativeSourceTarget,
 			BindableProperty targetProperty,
 			Element currentElement = null,
-			int currentLevel = 0,
-			List<Element> chain = null,
-			object lastMatchingBctx = null)
+			int currentLevel = 1,
+			List<Element> chain = null)
 		{			
-			currentElement = currentElement ?? target;
-			chain = chain ?? new List<Element> { target };
+			currentElement = currentElement ?? relativeSourceTarget;
+			chain = chain ?? new List<Element> { relativeSourceTarget };
 
+			if (currentElement.RealParent is Application)
+				return;
 			if (!(Source is RelativeBindingSource relativeSource))
 				return;
 
-			if (currentElement.RealParent is Application || 
-				currentElement.RealParent == null)
-			{
-				// Couldn't find the desired ancestor type in the chain, but it may be added later, 
-				// so apply with a null source for now.
-				_expression.Apply(null, target, targetProperty);
-				_expression.SubscribeToAncestryChanges(
-					chain,
-					relativeSource.Mode == RelativeBindingSourceMode.FindAncestorBindingContext,
-					rootIsSource: false);
-			}
-			else if (currentElement.RealParent != null)
+			if (currentElement.RealParent != null)
 			{
 				chain.Add(currentElement.RealParent);
-				if (ElementFitsAncestorTypeAndLevel(currentElement.RealParent, ref currentLevel, ref lastMatchingBctx))
+				if (ElementFitsAncestorTypeAndLevel(currentElement.RealParent, currentLevel))
 				{
 					object resolvedSource;
 					if (relativeSource.Mode == RelativeBindingSourceMode.FindAncestor)
 						resolvedSource = currentElement.RealParent;
 					else
 						resolvedSource = currentElement.RealParent?.BindingContext;
-					_expression.Apply(resolvedSource, target, targetProperty);
-					_expression.SubscribeToAncestryChanges(
-						chain, 
-						relativeSource.Mode == RelativeBindingSourceMode.FindAncestorBindingContext,
-						rootIsSource: true);
+					_expression.Apply(resolvedSource, actualTarget, targetProperty);
+					_expression.SubscribeToAncestryChanges(chain);
 				}
 				else
 				{
 					ApplyAncestorTypeBinding(
-						target, 
+						actualTarget, 
+						relativeSourceTarget,
 						targetProperty, 
 						currentElement.RealParent, 
-						currentLevel,
-						chain,
-						lastMatchingBctx);
+						++currentLevel,
+						chain);
 				}
 			}
 			else
@@ -234,53 +224,44 @@ namespace Xamarin.Forms
 				{
 					currentElement.ParentSet -= onElementParentSet;
 					ApplyAncestorTypeBinding(
-						target, 
+						actualTarget, 
+						relativeSourceTarget,
 						targetProperty, 
 						currentElement, 
 						currentLevel,
-						chain,
-						lastMatchingBctx);
+						chain);
 				};
 				currentElement.ParentSet += onElementParentSet;
 			}			
 		}
 
-		bool ElementFitsAncestorTypeAndLevel(Element element, ref int level, ref object lastPotentialBctx)
+		bool ElementFitsAncestorTypeAndLevel(Element element, int level)
 		{
 			if (!(Source is RelativeBindingSource relativeSource))
 				return false;
 
-			bool fitsElementType =
-				relativeSource.Mode == RelativeBindingSourceMode.FindAncestor &&
-				relativeSource.AncestorType.GetTypeInfo().IsAssignableFrom(element.GetType().GetTypeInfo());
-
-			bool fitsBindingContextType =
-				element.BindingContext != null &&				
-				relativeSource.Mode == RelativeBindingSourceMode.FindAncestorBindingContext &&
-				relativeSource.AncestorType.GetTypeInfo().IsAssignableFrom(element.BindingContext.GetType().GetTypeInfo());
-
-			if (!fitsElementType && !fitsBindingContextType)
+			if (level < relativeSource.AncestorLevel)
 				return false;
 
-			if (fitsBindingContextType)
-			{
-				if (!object.ReferenceEquals(lastPotentialBctx, element.BindingContext))
-				{
-					lastPotentialBctx = element.BindingContext;
-					level++;
-				}
-			}
-			else
-			{
-				level++;
-			}
+			if (relativeSource.Mode == RelativeBindingSourceMode.FindAncestor &&
+				relativeSource.AncestorType.GetTypeInfo().IsAssignableFrom(element.GetType().GetTypeInfo()))
+				return true;
 
-			return level >= relativeSource.AncestorLevel;
+			if (element.BindingContext != null &&
+				relativeSource.Mode == RelativeBindingSourceMode.FindAncestorBindingContext &&
+				relativeSource.AncestorType.GetTypeInfo().IsAssignableFrom(element.BindingContext.GetType().GetTypeInfo()))
+				return true;
+
+			return false;
 		}
 
 		internal override BindingBase Clone()
 		{
-			return new Binding(Path, Mode, Converter, ConverterParameter, StringFormat, Source) {
+			return new Binding(Path, Mode) {
+				Converter = Converter,
+				ConverterParameter = ConverterParameter,
+				StringFormat = StringFormat,
+				Source = Source,
 				UpdateSourceEventName = UpdateSourceEventName,
 				TargetNullValue = TargetNullValue,
 				FallbackValue = FallbackValue,
