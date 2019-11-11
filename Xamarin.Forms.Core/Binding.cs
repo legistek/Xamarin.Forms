@@ -83,7 +83,7 @@ namespace Xamarin.Forms
 				ThrowIfApplied();
 				_source = value;
 				if ((value as RelativeBindingSource)?.Mode == RelativeBindingSourceMode.TemplatedParent)
-					this.AllowChaining = true;
+					AllowChaining = true;
 			}
 		}
 
@@ -141,19 +141,20 @@ namespace Xamarin.Forms
 			}
 		}
 
-		void ApplyRelativeSourceBinding(
+#pragma warning disable RECS0165 // Asynchronous methods should return a Task instead of void
+		async void ApplyRelativeSourceBinding(
 			BindableObject targetObject, 
 			BindableProperty targetProperty)
+#pragma warning restore RECS0165 // Asynchronous methods should return a Task instead of void
 		{
-			if (!(targetObject is Element elem))
-				throw new InvalidOperationException();
 			if (!(Source is RelativeBindingSource relativeSource))
 				return;
 
 			var relativeSourceTarget = this.RelativeSourceTargetOverride ?? targetObject as Element;
+			if (!(relativeSourceTarget is Element))
+				throw new InvalidOperationException();
 
 			object resolvedSource = null;			
-
 			switch (relativeSource.Mode)
 			{
 				case RelativeBindingSourceMode.Self:
@@ -161,13 +162,12 @@ namespace Xamarin.Forms
 					break;
 
 				case RelativeBindingSourceMode.TemplatedParent:
-					_expression.SubscribeToTemplatedParentChanges(relativeSourceTarget, targetProperty);
-					resolvedSource = relativeSourceTarget.TemplatedParent;
+                    resolvedSource = await TemplateUtilities.FindTemplatedParentAsync(relativeSourceTarget);
 					break;
 
 				case RelativeBindingSourceMode.FindAncestor:
 				case RelativeBindingSourceMode.FindAncestorBindingContext:
-					ApplyAncestorTypeBinding(elem, relativeSourceTarget, targetProperty);
+					ApplyAncestorTypeBinding(targetObject, relativeSourceTarget, targetProperty);
 					return;
 
 				default:
@@ -178,7 +178,7 @@ namespace Xamarin.Forms
 		}		
 
 		void ApplyAncestorTypeBinding(
-			Element actualTarget,
+			BindableObject actualTarget,
 			Element relativeSourceTarget,
 			BindableProperty targetProperty,
 			Element currentElement = null,
