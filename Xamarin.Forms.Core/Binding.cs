@@ -147,12 +147,12 @@ namespace Xamarin.Forms
 			BindableProperty targetProperty)
 #pragma warning restore RECS0165 // Asynchronous methods should return a Task instead of void
 		{
-			if (!(targetObject is Element elem))
-				throw new InvalidOperationException();
 			if (!(Source is RelativeBindingSource relativeSource))
 				return;
 
 			var relativeSourceTarget = this.RelativeSourceTargetOverride ?? targetObject as Element;
+			if (!(relativeSourceTarget is Element))
+				throw new InvalidOperationException();
 
 			object resolvedSource = null;			
 			switch (relativeSource.Mode)
@@ -162,12 +162,12 @@ namespace Xamarin.Forms
 					break;
 
 				case RelativeBindingSourceMode.TemplatedParent:
-                    resolvedSource = await TemplateUtilities.FindTemplatedParentAsync(elem);
+                    resolvedSource = await TemplateUtilities.FindTemplatedParentAsync(relativeSourceTarget);
 					break;
 
 				case RelativeBindingSourceMode.FindAncestor:
 				case RelativeBindingSourceMode.FindAncestorBindingContext:
-					ApplyAncestorTypeBinding(elem, relativeSourceTarget, targetProperty);
+					ApplyAncestorTypeBinding(targetObject, relativeSourceTarget, targetProperty);
 					return;
 
 				default:
@@ -178,7 +178,7 @@ namespace Xamarin.Forms
 		}		
 
 		void ApplyAncestorTypeBinding(
-			Element actualTarget,
+			BindableObject actualTarget,
 			Element relativeSourceTarget,
 			BindableProperty targetProperty,
 			Element currentElement = null,

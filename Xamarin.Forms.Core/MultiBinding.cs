@@ -90,9 +90,7 @@ namespace Xamarin.Forms
 					if (!object.ReferenceEquals(proxy.BindingContext, context))
 					{
 						childContextChanged = true;
-						proxy.SuspendValueChangeNotification = true;
-						proxy.BindingContext = context;
-						proxy.SuspendValueChangeNotification = false;
+						proxy.SetValueSilent(Element.BindingContextProperty, context);
 					}
 				}
 				if ( childContextChanged )
@@ -172,7 +170,7 @@ namespace Xamarin.Forms
 						newTargetValue = convertedValue;
 				}
 
-				_mainProxy.SetValueSilent(newTargetValue);
+				_mainProxy.SetValueSilent(MultiBindingProxy.ValueProperty, newTargetValue);
 			}
 
 			if (reapplyExpression)
@@ -200,8 +198,8 @@ namespace Xamarin.Forms
 				var proxy = new MultiBindingProxy(this);
 				proxy.BindingContext = context;
 
-				// Bind each proxy's BindingContext to that of the 
-				// target.
+				//// Bind each proxy's BindingContext to that of the 
+				//// target.
 				//proxy.SetBinding(
 				//	BindableObject.BindingContextProperty,
 				//	new Binding(nameof(target.BindingContext), mode: BindingMode.OneWay, source: target));
@@ -245,7 +243,8 @@ namespace Xamarin.Forms
 				if (this.GetRealizedMode(_targetProperty) == BindingMode.OneWayToSource)
 					// Ensures that a failed ConvertBack doesn't 
 					// affect the source values
-					this._childProxies.ForEach(p => p.SetValueSilent(Binding.DoNothing));
+					this._childProxies.ForEach(p => 
+						p.SetValueSilent(MultiBindingProxy.ValueProperty, Binding.DoNothing));
 				return false;
 			}
 
@@ -265,7 +264,7 @@ namespace Xamarin.Forms
 				var childMode = this.Bindings[i].GetRealizedMode(_targetProperty);
 				if (childMode != BindingMode.TwoWay && childMode != BindingMode.OneWayToSource)
 					continue;
-				this._childProxies[i].SetValueSilent(convertedValues[i]);
+				this._childProxies[i].SetValueSilent(MultiBindingProxy.ValueProperty, convertedValues[i]);
 			}
 			return true;
 		}
