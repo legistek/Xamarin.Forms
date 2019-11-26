@@ -12,6 +12,7 @@ namespace Xamarin.Forms
 		string _stringFormat;
 		object _targetNullValue;
 		object _fallbackValue;
+		WeakReference<Element> _relativeSourceTargetOverride;
 
 		internal BindingBase()
 		{
@@ -69,7 +70,22 @@ namespace Xamarin.Forms
 
 		internal bool IsApplied { get; private set; }
 
-		internal Element RelativeSourceTargetOverride { get; set; }
+		internal Element RelativeSourceTargetOverride
+		{
+			get
+			{
+				Element element = null;
+				_relativeSourceTargetOverride?.TryGetTarget(out element);
+				return element;
+			}
+			set
+			{
+				if (value != null)
+					_relativeSourceTargetOverride = new WeakReference<Element>(value);
+				else
+					_relativeSourceTargetOverride = null;
+			}
+		}
 
 		public static void DisableCollectionSynchronization(IEnumerable collection)
 		{
