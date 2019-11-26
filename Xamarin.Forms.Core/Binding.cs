@@ -89,8 +89,6 @@ namespace Xamarin.Forms
 
 		public static readonly object DoNothing = new object();
 
-		public static readonly object UnsetValue = new object();
-
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public string UpdateSourceEventName {
 			get { return _updateSourceEventName; }
@@ -197,7 +195,7 @@ namespace Xamarin.Forms
 			{
 				// Couldn't find the desired ancestor type in the chain, but it may be added later, 
 				// so apply with a null source for now.
-				_expression.Apply(null, target, targetProperty);
+				_expression.Apply(null, actualTarget, targetProperty);
 				_expression.SubscribeToAncestryChanges(
 					chain,
 					relativeSource.Mode == RelativeBindingSourceMode.FindAncestorBindingContext,
@@ -213,7 +211,7 @@ namespace Xamarin.Forms
 						resolvedSource = currentElement.RealParent;
 					else
 						resolvedSource = currentElement.RealParent?.BindingContext;
-					_expression.Apply(resolvedSource, target, targetProperty);
+					_expression.Apply(resolvedSource, actualTarget, targetProperty);
 					_expression.SubscribeToAncestryChanges(
 						chain, 
 						relativeSource.Mode == RelativeBindingSourceMode.FindAncestorBindingContext,
@@ -314,7 +312,7 @@ namespace Xamarin.Forms
 
 		internal override void Unapply(bool fromBindingContextChanged = false)
 		{
-			if (Source != null && fromBindingContextChanged && IsApplied)
+			if (Source != null && !(Source is RelativeBindingSource) && fromBindingContextChanged && IsApplied)
 				return;
 			
 			base.Unapply(fromBindingContextChanged: fromBindingContextChanged);
