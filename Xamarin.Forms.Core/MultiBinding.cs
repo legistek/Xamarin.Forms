@@ -14,7 +14,7 @@ namespace Xamarin.Forms
 		IMultiValueConverter _converter;
 		object _converterParameter;
 		BindingExpression _expression;
-		Collection<BindingBase> _bindings;
+		IList<BindingBase> _bindings;
 		BindableProperty _targetProperty;
 		bool _isApplying;
 		bool _isCreating;
@@ -40,10 +40,14 @@ namespace Xamarin.Forms
 			}
 		}
 
-		public Collection<BindingBase> Bindings
+		public IList<BindingBase> Bindings
 		{
-			get => _bindings ?? (_bindings = new Collection<BindingBase>());
-			set => _bindings = value;
+			get => _bindings ?? (_bindings = new List<BindingBase>());
+			set
+			{
+				ThrowIfApplied();
+				_bindings = value;
+			}
 		}
 
 		internal List<MultiBindingProxy> SourceProxies { get; private set; }
@@ -66,7 +70,9 @@ namespace Xamarin.Forms
 
 		internal override void Apply(bool fromTarget)
 		{
-			base.Apply(fromTarget);
+			VerifyConverterBeforeApply();
+
+			base.Apply(fromTarget);		
 
 			if (_hasSuccessfullyConverted && this.GetRealizedMode(_targetProperty) == BindingMode.OneTime)
 				return;
@@ -87,6 +93,8 @@ namespace Xamarin.Forms
 			BindableProperty targetProperty, 
 			bool fromBindingContextChanged = false)
 		{
+			VerifyConverterBeforeApply();
+
 			base.Apply(context, bindObj, targetProperty, fromBindingContextChanged);
 
 			if (IsApplied && fromBindingContextChanged)
@@ -288,6 +296,12 @@ namespace Xamarin.Forms
 			{
 				_isCreating = false;
 			}
+		}
+
+		void VerifyConverterBeforeApply()
+		{
+			if (this.Converter == null)
+				throw new InvalidOperationException($"{nameof(MultiBinding)} requires {nameof(Converter)} be set.");
 		}
 	}
 }
