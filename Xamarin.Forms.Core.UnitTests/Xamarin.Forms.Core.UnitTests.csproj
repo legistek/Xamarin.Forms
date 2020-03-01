@@ -96,6 +96,7 @@
     <Compile Include="Markup\ViewInGridExtensionsTests.cs" />
     <Compile Include="Markup\VisualElementExtensionsTests.cs" />
     <Compile Include="NumericExtensionsTests.cs" />
+    <Compile Include="MultiBindingTests.cs" />
     <Compile Include="RefreshViewTests.cs" />
     <Compile Include="MockDispatcherProvider.cs" />
     <Compile Include="MockDispatcher.cs" />
