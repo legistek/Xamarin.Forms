@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using CoreGraphics;
 using UIKit;
 using static Xamarin.Forms.IndicatorView;
 
@@ -8,9 +9,18 @@ namespace Xamarin.Forms.Platform.iOS
 	{
 		UIColor _defaultPagesIndicatorTintColor;
 		UIColor _defaultCurrentPagesIndicatorTintColor;
-		UIPageControl UIPager => Control as UIPageControl;
+		FormsPageControl UIPager => Control as FormsPageControl;
 		bool _disposed;
 		bool _updatingPosition;
+
+		public UIView View => this;
+
+
+		[Internals.Preserve(Conditional = true)]
+		public IndicatorViewRenderer()
+		{
+
+		}
 
 		protected override void OnElementChanged(ElementChangedEventArgs<IndicatorView> e)
 		{
@@ -38,6 +48,7 @@ namespace Xamarin.Forms.Platform.iOS
 		{
 			if (_disposed)
 				return;
+
 			_disposed = true;
 
 			if (disposing)
@@ -47,14 +58,21 @@ namespace Xamarin.Forms.Platform.iOS
 					UIPager.ValueChanged -= UIPagerValueChanged;
 				}
 			}
+
 			base.Dispose(disposing);
 		}
 
 		protected override void OnElementPropertyChanged(object sender, PropertyChangedEventArgs e)
 		{
 			base.OnElementPropertyChanged(sender, e);
-			if (UIPager == null)
-				return;
+
+			if (e.PropertyName == IndicatorSizeProperty.PropertyName)
+				UpdateIndicatorSize();
+			if (e.PropertyName == IndicatorsShapeProperty.PropertyName ||
+				e.PropertyName == ItemsSourceProperty.PropertyName)
+				UpdateIndicator();
+			else if (e.PropertyName == IndicatorTemplateProperty.PropertyName)
+				UpdateIndicatorTemplate();
 			if (e.PropertyName == IndicatorColorProperty.PropertyName)
 				UpdatePagesIndicatorTintColor();
 			else if (e.PropertyName == SelectedIndicatorColorProperty.PropertyName)
@@ -63,8 +81,10 @@ namespace Xamarin.Forms.Platform.iOS
 				UpdatePages();
 			else if (e.PropertyName == HideSingleProperty.PropertyName)
 				UpdateHidesForSinglePage();
-			else if (e.PropertyName == PositionProperty.PropertyName)
+			else if (e.Is(PositionProperty))
 				UpdateCurrentPage();
+			else if (e.Is(MaximumVisibleProperty))
+				UpdateMaximumVisible();
 		}
 
 		protected override UIView CreateNativeControl()
@@ -73,15 +93,23 @@ namespace Xamarin.Forms.Platform.iOS
 			{
 				UIPager.ValueChanged -= UIPagerValueChanged;
 			}
-			var uiPager = new UIPageControl();
+
+			var uiPager = new FormsPageControl
+			{
+				IsSquare = Element.IndicatorsShape == IndicatorShape.Square,
+				IndicatorSize = Element.IndicatorSize
+			};
 			_defaultPagesIndicatorTintColor = uiPager.PageIndicatorTintColor;
 			_defaultCurrentPagesIndicatorTintColor = uiPager.CurrentPageIndicatorTintColor;
 			uiPager.ValueChanged += UIPagerValueChanged;
+
 			return uiPager;
 		}
 
 		void UpdateControl()
 		{
+			ClearIndicators();
+
 			var control = (Element.IndicatorTemplate != null)
 				? (UIView)Element.IndicatorLayout.GetRenderer()
 				: CreateNativeControl();
@@ -89,34 +117,139 @@ namespace Xamarin.Forms.Platform.iOS
 			SetNativeControl(control);
 		}
 
+		void ClearIndicators()
+		{
+			foreach (var child in View.Subviews)
+				child.RemoveFromSuperview();
+		}
+
+		void UpdateIndicator()
+		{
+			if (Element.IndicatorTemplate == null)
+				UpdateIndicatorShape();
+			else
+				UpdateIndicatorTemplate();
+		}
+
+		void UpdateIndicatorShape()
+		{
+			ClearIndicators();
+			UIPager.IsSquare = Element.IndicatorsShape == IndicatorShape.Square;
+			AddSubview(UIPager);
+			UIPager.LayoutSubviews();
+		}
+
+		void UpdateIndicatorSize()
+		{
+			UIPager.IndicatorSize = Element.IndicatorSize;
+			UIPager.LayoutSubviews();
+		}
+
+		void UpdateIndicatorTemplate()
+		{
+			if (Element.IndicatorLayout == null)
+				return;
+
+			ClearIndicators();
+			var control = (UIView)Element.IndicatorLayout.GetRenderer();
+			AddSubview(control);
+
+			var indicatorLayoutSizeRequest = Element.IndicatorLayout.Measure(double.PositiveInfinity, double.PositiveInfinity, MeasureFlags.IncludeMargins);
+			Element.IndicatorLayout.Layout(new Rectangle(0, 0, indicatorLayoutSizeRequest.Request.Width, indicatorLayoutSizeRequest.Request.Height));
+		}
+
 		void UIPagerValueChanged(object sender, System.EventArgs e)
 		{
-			if (_updatingPosition)
+			if (_updatingPosition || UIPager == null)
 				return;
+
 			Element.Position = (int)UIPager.CurrentPage;
 		}
 
 		void UpdateCurrentPage()
 		{
+			if (UIPager == null)
+				return;
+
 			_updatingPosition = true;
-			UIPager.CurrentPage = Element.Position;
+			var maxVisible = Element.MaximumVisible;
+			var position = Element.Position;
+			var index = position >= maxVisible ? maxVisible - 1 : position;
+			UIPager.CurrentPage = index;
+			UIPager.LayoutSubviews();
 			_updatingPosition = false;
 		}
 
-		void UpdatePages() => UIPager.Pages = Element.Count;
+		void UpdatePages()
+		{
+			if (UIPager == null)
+				return;
 
-		void UpdateHidesForSinglePage() => UIPager.HidesForSinglePage = Element.HideSingle;
+			var maxCount = Element.MaximumVisible;
+			var count = Element.Count;
+
+			UIPager.Pages = maxCount != int.MaxValue ? maxCount : count;
+		}
+
+		void UpdateHidesForSinglePage()
+		{
+			if (UIPager == null)
+				return;
+
+			UIPager.HidesForSinglePage = Element.HideSingle;
+		}
 
 		void UpdatePagesIndicatorTintColor()
 		{
+			if (UIPager == null)
+				return;
+
 			var color = Element.IndicatorColor;
 			UIPager.PageIndicatorTintColor = color.IsDefault ? _defaultPagesIndicatorTintColor : color.ToUIColor();
 		}
 
 		void UpdateCurrentPagesIndicatorTintColor()
 		{
+			if (UIPager == null)
+				return;
+
 			var color = Element.SelectedIndicatorColor;
 			UIPager.CurrentPageIndicatorTintColor = color.IsDefault ? _defaultCurrentPagesIndicatorTintColor : color.ToUIColor();
+		}
+
+		void UpdateMaximumVisible()
+		{
+			UpdatePages();
+			UpdateCurrentPage();
+		}
+	}
+
+	class FormsPageControl : UIPageControl
+	{
+		const int DefaultIndicatorSize = 7;
+
+		public bool IsSquare { get; set; }
+
+		public double IndicatorSize { get; set; }
+
+		public override void LayoutSubviews()
+		{
+			base.LayoutSubviews();
+
+			float scale = (float)IndicatorSize / DefaultIndicatorSize;
+			var newTransform = CGAffineTransform.MakeScale(scale, scale);
+
+			Transform = newTransform;
+			if (Subviews.Length == 0)
+				return;
+
+			foreach (var view in Subviews)
+			{
+				if (IsSquare)
+				{
+					view.Layer.CornerRadius = 0;
+				}
+			}
 		}
 	}
 }

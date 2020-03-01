@@ -47,7 +47,7 @@ namespace Xamarin.Forms.Controls.GalleryPages.CollectionViewGalleries.CarouselVi
 
 			layout.Children.Add(carouselView);
 
-			var generator = new ItemsSourceGenerator(carouselView, nItems, ItemsSourceType.ObservableCollection, false);
+			var generator = new ItemsSourceGenerator(carouselView, nItems, ItemsSourceType.ObservableCollection);
 
 			layout.Children.Add(generator);
 
@@ -56,36 +56,16 @@ namespace Xamarin.Forms.Controls.GalleryPages.CollectionViewGalleries.CarouselVi
 			var indicatorView = new IndicatorView
 			{
 				HorizontalOptions = LayoutOptions.Center,
-				Margin = new Thickness(12, 6, 12, 24),
+				Margin = new Thickness(12, 6, 12, 12),
 				IndicatorColor = Color.Gray,
 				SelectedIndicatorColor = Color.Black,
 				IndicatorsShape = IndicatorShape.Square,
 				AutomationId = "TheIndicatorView"
 			};
 
-			IndicatorView.SetItemsSourceBy(indicatorView, carouselView);
+			carouselView.IndicatorView = indicatorView;
 
 			layout.Children.Add(indicatorView);
-
-			var stckMaxVisible = new StackLayout { Orientation = StackOrientation.Horizontal };
-			stckMaxVisible.Children.Add(new Label { VerticalOptions = LayoutOptions.Center, Text = "MaximumVisible" });
-			var maxVisibleSlider = new Slider
-			{
-				Maximum = nItems,
-				Minimum = 0,
-				Value = nItems,
-				WidthRequest = 150,
-				BackgroundColor = Color.Pink
-			};
-			stckMaxVisible.Children.Add(maxVisibleSlider);
-
-			maxVisibleSlider.ValueChanged += (s, e) =>
-			{
-				var maximumVisible = (int)maxVisibleSlider.Value;
-				indicatorView.MaximumVisible = maximumVisible;
-			};
-
-			layout.Children.Add(stckMaxVisible);
 
 			var stckColors = new StackLayout { Orientation = StackOrientation.Horizontal };
 			stckColors.Children.Add(new Label { VerticalOptions = LayoutOptions.Center, Text = "IndicatorColor" });
@@ -169,19 +149,36 @@ namespace Xamarin.Forms.Controls.GalleryPages.CollectionViewGalleries.CarouselVi
 
 			layout.Children.Add(stckTemplate);
 
+			var stckSize = new StackLayout { Orientation = StackOrientation.Horizontal };
+			stckSize.Children.Add(new Label { VerticalOptions = LayoutOptions.Center, Text = "Indicator Size" });
+
+			//indicatorView.IndicatorSize = 25;
+
+			var sizeSlider = new Slider
+			{
+				WidthRequest = 150,
+				Value = indicatorView.IndicatorSize,
+				Maximum = 50,
+			};
+
+			sizeSlider.ValueChanged += (s, e) =>
+			{
+				var indicatorSize = sizeSlider.Value;
+				indicatorView.IndicatorSize = indicatorSize;
+			};
+
+			stckSize.Children.Add(sizeSlider);
+
+			layout.Children.Add(stckSize);
+
 			Grid.SetRow(generator, 0);
-			Grid.SetRow(stckMaxVisible, 1);
-			Grid.SetRow(stckColors, 2);
-			Grid.SetRow(stckTemplate, 3);
+			Grid.SetRow(stckColors, 1);
+			Grid.SetRow(stckTemplate, 2);
+			Grid.SetRow(stckSize, 3);
 			Grid.SetRow(carouselView, 4);
 			Grid.SetRow(indicatorView, 5);
 
 			Content = layout;
-
-			generator.CollectionChanged += (sender, e) =>
-			{
-				maxVisibleSlider.Maximum = generator.Count;
-			};
 		}
 	}
 }

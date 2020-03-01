@@ -12,6 +12,12 @@ namespace Xamarin.Forms.Platform.iOS
 		UIView _originalBackgroundView;
 		RectangleF _previousFrame;
 
+		[Internals.Preserve(Conditional = true)]
+		public TableViewRenderer()
+		{
+
+		}
+
 		public override SizeRequest GetDesiredSize(double widthConstraint, double heightConstraint)
 		{
 			return Control.GetSizeRequest(widthConstraint, heightConstraint, DefaultRowHeight, DefaultRowHeight);
@@ -36,7 +42,7 @@ namespace Xamarin.Forms.Platform.iOS
 				_insetTracker.Dispose();
 				_insetTracker = null;
 
-				var viewsToLookAt = new FormsStack<UIView>(Subviews);
+				var viewsToLookAt = new Stack<UIView>(Subviews);
 				while (viewsToLookAt.Count > 0)
 				{
 					var view = viewsToLookAt.Pop();

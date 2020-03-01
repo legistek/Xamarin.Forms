@@ -105,6 +105,7 @@ namespace Xamarin.Forms
 			SynchronizedCollections.Add(collection, new CollectionSynchronizationContext(context, callback));
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		protected void ThrowIfApplied()
 		{
 			if (IsApplied)
