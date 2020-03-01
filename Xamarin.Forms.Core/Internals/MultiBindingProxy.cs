@@ -14,7 +14,7 @@
 		internal bool IsTarget { get; }
 
 		public static readonly BindableProperty ValueProperty = BindableProperty.Create(
-			"Value",
+			nameof(Value),
 			typeof(object),
 			typeof(MultiBindingProxy),
 			null,

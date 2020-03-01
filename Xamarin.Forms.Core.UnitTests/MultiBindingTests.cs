@@ -36,7 +36,7 @@ namespace Xamarin.Forms.Core.UnitTests
 		public void TestChildOneWayOverridesMultiTwoWay()
 		{
 			// This tests a weird edge case where the MultiBinding is TwoWay but
-			// one of the child bindings is OneWay. This results a situation where
+			// one of the child bindings is OneWay. This results in a situation where
 			// you actually can't change the target value to be inconsistent with the
 			// the source value for the OneWay because ConvertBack causes Convert
 			// to get re-evaluated (and this effectively negates the change to the
